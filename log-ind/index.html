@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log ind – Haderslev Marineforening</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2b7bb9">
+<link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="side-hjem">
+<!-- FÆLLES:TOP -->
+<a class="spring-til-indhold" href="#indhold-start">Spring til indhold</a>
+<header class="top">
+  <div class="top-indre">
+    <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="19" fill="#2b7bb9"/><circle cx="20" cy="11" r="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M20 14v17M14 18h12M11 25c0 5 4 7 9 7s9-2 9-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg><span>Haderslev Marineforening</span></a>
+    <button class="menu-knap" type="button" aria-expanded="false" aria-controls="hovedmenu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Menu
+    </button>
+    <nav class="hovedmenu" id="hovedmenu" aria-label="Hovedmenu">
+      <ul>
+        <li><a href="/">Hjem</a></li>
+        <li><a href="/om-os/">Om os</a></li>
+        <li><a href="/arrangementskalender/">Arrangementskalender</a></li>
+        <li><a href="/vagter/">Vagter</a></li>
+        <li><a href="/beskeder/">Beskeder</a></li>
+        <li><a href="/galleri/">Galleri</a></li>
+      </ul>
+    </nav>
+    <div class="bruger" id="bruger"><a class="btn sm alt" href="/log-ind/">Log ind</a></div>
+  </div>
+</header>
+<!-- /FÆLLES:TOP -->
+
+<main id="indhold-start">
+  <div class="smal">
+    <div id="status" class="note status" hidden></div>
+
+    <section id="trin-login" data-trin hidden>
+      <div class="sidehoved"><h1>Log ind</h1>
+        <p>For medlemmer af Haderslev Marineforening. Log ind for at se vagter og beskeder.</p></div>
+      <form class="kort" id="login-form">
+        <label for="login-email" style="margin-top:0">E-mail</label>
+        <input id="login-email" name="email" type="email" autocomplete="email" required>
+        <label for="login-kode">Adgangskode</label>
+        <input id="login-kode" name="kode" type="password" autocomplete="current-password" required>
+        <div class="form-handling">
+          <button class="btn" type="submit">Log ind</button>
+          <button class="linkknap" type="button" id="glemt-knap">Glemt adgangskode?</button>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:22px 0 14px">
+        <p class="muted lille">Kan du ikke huske din adgangskode? Skriv din e-mail ovenfor, og få et link tilsendt, som logger dig ind med det samme.</p>
+        <button class="btn alt sm" type="button" id="link-knap">Send mig et login-link</button>
+      </form>
+      <p class="muted lille" style="margin-top:16px">Har du ikke en konto? Kontakt bestyrelsen, så sender vi dig en invitation på e-mail.</p>
+    </section>
+
+    <section id="trin-ny-kode" data-trin hidden>
+      <div class="sidehoved"><h1 id="ny-kode-titel">Vælg en adgangskode</h1><p id="ny-kode-intro"></p></div>
+      <form class="kort" id="ny-kode-form">
+        <div id="navn-felt">
+          <label for="ny-navn" style="margin-top:0">Dit navn</label>
+          <input id="ny-navn" name="navn" autocomplete="name" maxlength="80">
+        </div>
+        <label for="kode1">Ny adgangskode</label>
+        <input id="kode1" name="kode1" type="password" autocomplete="new-password" minlength="8" required aria-describedby="kode-hjaelp">
+        <p class="hjaelp" id="kode-hjaelp">Mindst 8 tegn.</p>
+        <label for="kode2">Gentag adgangskode</label>
+        <input id="kode2" name="kode2" type="password" autocomplete="new-password" minlength="8" required>
+        <div class="form-handling"><button class="btn" type="submit">Gem adgangskode</button></div>
+      </form>
+    </section>
+
+    <section id="trin-profil" data-trin hidden>
+      <div class="sidehoved"><h1>Min profil</h1><p>Du er logget ind.</p></div>
+      <form class="kort" id="profil-form">
+        <p style="margin:0">E-mail: <b id="profil-email"></b><br>Rolle: <b id="profil-rolle"></b></p>
+        <label for="profil-navn">Navn, som de andre medlemmer ser det</label>
+        <input id="profil-navn" name="navn" autocomplete="name" maxlength="80" required>
+        <div class="form-handling">
+          <button class="btn" type="submit">Gem navn</button>
+          <button class="btn alt sm" type="button" id="skift-kode">Skift adgangskode</button>
+          <button class="btn alt sm" type="button" id="log-ud">Log ud</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+
+<!-- FÆLLES:FOD -->
+<footer class="fod">
+  <div class="fod-indre">
+    <div>
+      <b>Haderslev Marineforening</b>
+      <address>Det Maritime Hus<br>Ved Havnen 18<br>6100 Haderslev</address>
+    </div>
+    <div>
+      <b>Kontakt</b><br>
+      Formand Harry Madsen<br>
+      Telefon: <a href="tel:+4540947875">40 94 78 75</a><br>
+      E-mail: <a href="mailto:Harry.madsen@hotmail.com">Harry.madsen@hotmail.com</a>
+    </div>
+    <div>
+      <b>Marinestuen</b><br>
+      Åben for hyggeligt samvær<br>
+      alle normale lørdage kl. 10–13
+    </div>
+    <div>
+      <b>Følg os</b><br>
+      [Link til Facebook-side]
+    </div>
+    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen.</p>
+  </div>
+</footer>
+<!-- /FÆLLES:FOD -->
+<script src="/assets/vendor/supabase.js"></script>
+<script src="/assets/js/config.js"></script>
+<script type="module" src="/assets/js/login.js"></script>
+</body>
+</html>
