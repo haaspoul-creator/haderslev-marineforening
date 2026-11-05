@@ -4,10 +4,13 @@ import { api, $, visStatus, fejlTekst, hentBruger, logUd } from "./app.js";
 const status = $("#status");
 const params = new URLSearchParams(location.search);
 const linkToken = params.get("link");
+let foersteVisning = true;
 const vis = (id) => {
   for (const s of document.querySelectorAll("[data-trin]")) s.hidden = s.id !== id;
   const o = document.querySelector(`#${id} h1`);
-  if (o) { o.setAttribute("tabindex", "-1"); o.focus(); }
+  // Flyt kun fokus, når trinnet skifter efter en handling – ikke ved sidens start.
+  if (o && !foersteVisning) { o.setAttribute("tabindex", "-1"); o.focus(); }
+  foersteVisning = false;
 };
 const tilbageTil = () => { const t = params.get("tilbage"); return t && t.startsWith("/") && !t.startsWith("//") ? t : "/"; };
 let tilstand = "link"; // "link" | "skift"
@@ -69,7 +72,11 @@ $("#ny-kode-form").addEventListener("submit", async (e) => {
 
 $("#profil-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  try { await api("/mig", { metode: "PATCH", data: { navn: e.target.navn.value } }); visStatus(status, "Dit navn er gemt.", "ok"); }
+  try {
+    await api("/mig", { metode: "PATCH", data: { navn: e.target.navn.value } });
+    visStatus(status, "Dit navn er gemt.", "ok");
+    const n = document.querySelector("#bruger .navn"); if (n) n.textContent = e.target.navn.value.trim();
+  }
   catch (err) { visStatus(status, fejlTekst(err), "fejl"); }
 });
 $("#skift-kode").addEventListener("click", () => {

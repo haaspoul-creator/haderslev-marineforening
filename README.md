@@ -3,7 +3,7 @@
 Den enklest mulige opbygning:
 - **Sider:** almindelige HTML-, CSS- og JavaScript-filer uden byggetrin.
 - **Server:** én fil, `api/index.js` (Node), med én afhængighed: Postgres-driveren `postgres`.
-- **Database:** almindelig **PostgreSQL**. Skemaet ligger i `db/skema.sql`.
+- **Database:** almindelig **PostgreSQL**. Skemaet ligger i `api/_skema.sql`.
 - **Login:** indbygget. Adgangskoder gemmes med scrypt, og login holdes i en sikker cookie. Der er ingen ekstern login- eller mailtjeneste: administratorer laver personlige links til medlemmerne.
 
 | Side | Adgang |

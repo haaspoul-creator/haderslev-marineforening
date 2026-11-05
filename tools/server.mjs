@@ -8,7 +8,7 @@ import handler from "../api/index.js";
 const ROD = new URL("..", import.meta.url).pathname;
 const TYPER = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml",
   ".jpg": "image/jpeg", ".png": "image/png", ".pdf": "application/pdf", ".xml": "application/xml", ".txt": "text/plain" };
-const SKJULT = /^\/(api|tools|db|node_modules|\.git)(\/|$)|\.(md|json|mjs)$/;
+const SKJULT = /^\/(api|tools|node_modules|\.git)(\/|$)|\.(md|json|mjs)$/;
 
 http.createServer(async (req, res) => {
   const sti = decodeURIComponent(new URL(req.url, "http://x").pathname);

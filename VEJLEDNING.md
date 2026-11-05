@@ -4,12 +4,12 @@
 1. Du får et personligt link fra en administrator (på mail eller SMS). Åbn det, ret evt. dit navn, og vælg en adgangskode (mindst 8 tegn).
 2. Næste gang: tryk **Log ind** øverst til højre, og skriv din e-mail og adgangskode.
 3. Glemt adgangskoden? Kontakt en fra bestyrelsen, så får du et nyt link.
-4. Under dit navn øverst kan du rette dit navn, skifte adgangskode og logge ud.
+4. Tryk på dit navn øverst til højre (på mobil: i menuen) for Min profil, Forslag, Administration og Log ud. Under Min profil øverst kan du rette dit navn, skifte adgangskode og logge ud.
 
 ## Vagter (medlemmer)
 - Gå til **Vagter**. Sæt flueben i **Jeg tager vagten** for at tage en vagt. Fjern fluebenet for at afmelde dig.
 - Dine vagter er fremhævet og mærket **Din vagt**. Står der **Fuld**, er alle pladser taget.
-- På mobil: stryg sidelæns på tabellen for at se fluebenet.
+- På mobil vises hver vagt som et kort med fluebenet nederst.
 
 ## Beskeder (medlemmer)
 - Skriv i feltet og tryk **Send besked**. Du kan slette dine egne beskeder (tryk **Slet** to gange).
@@ -21,9 +21,11 @@
 ## For administratorer
 **Forslag:** Gå til **Forslag** (link under Administration). Sæt status (Ny, I gang, Udført, Ikke aktuelt), skriv evt. et kort svar og tryk **Gem**. Medlemmet ser svaret med det samme.
 
-**Tilføj arrangement:** Gå til **Arrangementskalender** → tryk **Tilføj arrangement** → udfyld titel og dato (tid, sted og beskrivelse er valgfrit) → **Tilføj til kalenderen**. Arrangementet vises straks, også på forsiden som "Næste arrangement". Slet med **Slet** (to tryk).
+**Tilføj arrangement:** Gå til **Arrangementskalender** → tryk **Tilføj arrangement** → udfyld titel og dato (tid, sted og beskrivelse er valgfrit) → **Tilføj til kalenderen**. Arrangementet vises straks, også på forsiden som "Næste arrangement". Har du skrevet forkert, så tryk **Ret** ud for arrangementet, ret felterne og tryk **Gem ændringer** (eller **Annuller**). Slet med **Slet** (to tryk).
 
-**Tilføj vagt:** Gå til **Vagter** → **Tilføj vagt** → udfyld vagt, dato og **antal pladser** → **Tilføj vagt**. Hvis du sletter en vagt, slettes tilmeldingerne også.
+**Tilføj vagt:** Gå til **Vagter** → **Tilføj vagt** → udfyld vagt, dato og **antal pladser** → **Tilføj vagt**. Ret en vagt med **Ret** (antal pladser kan ikke sættes lavere end antallet af tilmeldte). Skal en person fjernes fra en vagt, så tryk **×** ved navnet (to tryk). Hvis du sletter en vagt, slettes tilmeldingerne også.
+
+**Galleri:** Tryk på et billede for at se det stort. Bladr med pilene (eller stryg på mobilen), og luk med × eller Esc.
 
 **Ny Ankerpost eller nyhed:** Gå til **Administration** (øverst, ved dit navn) → **Ny nyhed på forsiden** → skriv overskrift og kort tekst, vælg evt. PDF-filen (højst 3 MB) → **Offentliggør**. Den nyeste nyhed vises på forsiden.
 

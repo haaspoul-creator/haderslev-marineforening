@@ -1,6 +1,6 @@
 // Haderslev Marineforening – hele server-delen (API) i én fil.
 // Kører som Vercel-funktion, eller lokalt/på egen server via tools/server.mjs.
-// Kræver miljøvariablen DATABASE_URL (en almindelig PostgreSQL-forbindelse).
+// Kræver miljøvariablen DATABASE_URL (eller STORAGE_URL / POSTGRES_URL fra Neon) (en almindelig PostgreSQL-forbindelse).
 import postgres from "postgres";
 import { randomBytes, scrypt as _scrypt, timingSafeEqual, createHash } from "node:crypto";
 import { promisify } from "node:util";
@@ -13,7 +13,9 @@ const sql = postgres(DB_URL, {
   max: 3, idle_timeout: 20,
   ssl: /localhost|127\.0\.0\.1/.test(DB_URL || "") ? false : "require",
   prepare: !/-pooler\./.test(DB_URL || ""), // Neons pooler: ingen gemte forespørgsler
+  connection: { TimeZone: "Europe/Copenhagen" }, // "i dag" og tidspunkter i dansk tid
 });
+const SKEMA = readFileSync(new URL("./_skema.sql", import.meta.url), "utf8");
 
 const SESSION_DAGE = 60;
 const LINK_DAGE = 14;
@@ -29,8 +31,9 @@ async function hashKode(kode) {
   const key = await scrypt(kode, salt, 64);
   return `scrypt$${salt.toString("hex")}$${key.toString("hex")}`;
 }
+const DUMMY = "scrypt$" + "0".repeat(32) + "$" + "0".repeat(128);
 async function tjekKode(kode, gemt) {
-  if (!gemt) return false;
+  if (!gemt) { await tjekKode(kode, DUMMY); return false; }
   const [, salt, key] = gemt.split("$");
   const ny = await scrypt(kode, Buffer.from(salt, "hex"), 64);
   return timingSafeEqual(ny, Buffer.from(key, "hex"));
@@ -60,7 +63,12 @@ const tekst = (v, maks, navn, kraevet = false) => {
   if (s.length > maks) throw new Fejl(400, `${navn} er for lang (højst ${maks} tegn).`);
   return s;
 };
-const dato = (v, navn = "dato") => { if (!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) throw new Fejl(400, `Udfyld ${navn}.`); return v; };
+const dato = (v, navn = "dato") => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) throw new Fejl(400, `Udfyld ${navn}.`);
+  const [y, m, d] = v.split("-").map(Number), t = new Date(Date.UTC(y, m - 1, d));
+  if (t.getUTCMonth() !== m - 1 || t.getUTCDate() !== d || y < 2000 || y > 2100) throw new Fejl(400, `Ugyldig ${navn}.`);
+  return v;
+};
 const tid = (v) => (v ? (/^\d{2}:\d{2}$/.test(v) ? v : (() => { throw new Fejl(400, "Ugyldigt tidspunkt."); })()) : null);
 const ROLLER = ["admin", "medlem", "laeser"];
 
@@ -72,6 +80,11 @@ async function hentBruger(req) {
     where s.token_hash = ${hash(token)} and s.udloeber > now()`;
   return b || null;
 }
+const kodeKrav = (kode) => {
+  if (kode.length < 8) throw new Fejl(400, "Adgangskoden skal være mindst 8 tegn.");
+  if (kode.length > 200) throw new Fejl(400, "Adgangskoden er for lang.");
+  return kode;
+};
 const kraevLogin = (b) => { if (!b) throw new Fejl(401, "Du skal være logget ind."); return b; };
 const kraevSkriv = (b) => { kraevLogin(b); if (b.rolle === "laeser") throw new Fejl(403, "Du har kun læseadgang."); return b; };
 const kraevAdmin = (b) => { kraevLogin(b); if (b.rolle !== "admin") throw new Fejl(403, "Kun administratorer kan gøre dette."); return b; };
@@ -91,8 +104,9 @@ const rute = (metode, moenster, fn) => ruter.push([metode, new RegExp("^/api" + 
 // Kræver miljøvariablen OPSAETNING_KODE og virker kun, så længe der ikke findes en administrator.
 rute("POST", "/opsaet", async ({ req, body }) => {
   const kode = process.env.OPSAETNING_KODE;
-  if (!kode || req.headers["x-opsaetning"] !== kode) throw new Fejl(404, "Ukendt adresse.");
-  await sql.unsafe(readFileSync(new URL("../db/skema.sql", import.meta.url), "utf8"));
+  const givet = String(req.headers["x-opsaetning"] || "");
+  if (!kode || givet.length !== kode.length || !timingSafeEqual(Buffer.from(givet), Buffer.from(kode))) throw new Fejl(404, "Ukendt adresse.");
+  await sql.unsafe(SKEMA);
   const [findes] = await sql`select 1 from brugere where rolle = 'admin' limit 1`;
   if (findes) throw new Fejl(409, "Der findes allerede en administrator.");
   const email = tekst(body.email, 200, "e-mail", true).toLowerCase();
@@ -108,7 +122,8 @@ rute("POST", "/log-ind", async ({ body, res }) => {
   const [b] = await sql`select * from brugere where email = ${email}`;
   if (b && b.fejl_antal >= 5 && b.fejl_tid > new Date(Date.now() - 15 * 60e3))
     throw new Fejl(429, "For mange forkerte forsøg. Vent 15 minutter, og prøv igen.");
-  if (!b || !(await tjekKode(String(body.kode || ""), b.kode_hash))) {
+  const gyldig = await tjekKode(String(body.kode || ""), b ? b.kode_hash : null); // altid scrypt: ens svartid
+  if (!b || !gyldig) {
     if (b) await sql`update brugere set fejl_antal = fejl_antal + 1, fejl_tid = now() where id = ${b.id}`;
     throw new Fejl(401, "Forkert e-mail eller adgangskode.");
   }
@@ -135,8 +150,7 @@ rute("POST", "/link", async ({ body }) => {
   return l;
 });
 rute("POST", "/aktiver", async ({ body, res }) => {
-  const kode = String(body.kode || "");
-  if (kode.length < 8) throw new Fejl(400, "Adgangskoden skal være mindst 8 tegn.");
+  const kode = kodeKrav(String(body.kode || ""));
   const [l] = await sql`delete from links where token_hash = ${hash(String(body.token || ""))} and udloeber > now() returning bruger_id`;
   if (!l) throw new Fejl(404, "Linket virker ikke længere. Bed en administrator om et nyt.");
   const navn = body.navn ? tekst(body.navn, 80, "navn", true) : null;
@@ -155,11 +169,11 @@ rute("PATCH", "/mig", async ({ bruger, body }) => {
   await sql`update brugere set navn = ${navn} where id = ${bruger.id}`;
   return { ok: true };
 });
-rute("POST", "/mig/kode", async ({ bruger, body }) => {
+rute("POST", "/mig/kode", async ({ req, bruger, body }) => {
   kraevLogin(bruger);
-  const kode = String(body.kode || "");
-  if (kode.length < 8) throw new Fejl(400, "Adgangskoden skal være mindst 8 tegn.");
+  const kode = kodeKrav(String(body.kode || ""));
   await sql`update brugere set kode_hash = ${await hashKode(kode)} where id = ${bruger.id}`;
+  await sql`delete from sessioner where bruger_id = ${bruger.id} and token_hash <> ${hash(laesCookie(req))}`; // log andre enheder ud
   return { ok: true };
 });
 
@@ -173,6 +187,13 @@ rute("POST", "/arrangementer", async ({ bruger, body }) => {
     ${tekst(body.titel, 120, "titel", true)}, ${dato(body.dato)}, ${tid(body.tid)}, ${tekst(body.sted, 120, "sted")}, ${tekst(body.beskrivelse, 1000, "beskrivelse")})
     returning id`;
   return a;
+});
+rute("PATCH", "/arrangementer/:id", async ({ bruger, body, p }) => {
+  kraevAdmin(bruger);
+  const r = await sql`update arrangementer set titel = ${tekst(body.titel, 120, "titel", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
+    sted = ${tekst(body.sted, 120, "sted")}, beskrivelse = ${tekst(body.beskrivelse, 1000, "beskrivelse")} where id = ${p.id}`;
+  if (!r.count) throw new Fejl(404, "Arrangementet findes ikke længere.");
+  return { ok: true };
 });
 rute("DELETE", "/arrangementer/:id", async ({ bruger, p }) => { kraevAdmin(bruger); await sql`delete from arrangementer where id = ${p.id}`; return { ok: true }; });
 
@@ -188,11 +209,30 @@ rute("GET", "/vagter", async ({ bruger }) => {
 });
 rute("POST", "/vagter", async ({ bruger, body }) => {
   kraevAdmin(bruger);
-  const pladser = Number(body.pladser);
-  if (!Number.isInteger(pladser) || pladser < 1 || pladser > 50) throw new Fejl(400, "Antal pladser skal være mellem 1 og 50.");
+  const pladser = pladsTal(body.pladser);
   const [v] = await sql`insert into vagter (titel, dato, tid, sted, pladser) values (
     ${tekst(body.titel, 120, "vagt", true)}, ${dato(body.dato)}, ${tid(body.tid)}, ${tekst(body.sted, 120, "sted")}, ${pladser}) returning id`;
   return v;
+});
+const pladsTal = (v) => {
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 1 || n > 50) throw new Fejl(400, "Antal pladser skal være mellem 1 og 50.");
+  return n;
+};
+rute("PATCH", "/vagter/:id", async ({ bruger, body, p }) => {
+  kraevAdmin(bruger);
+  const pladser = pladsTal(body.pladser);
+  const [{ antal }] = await sql`select count(*)::int antal from tilmeldinger where vagt_id = ${p.id}`;
+  if (pladser < antal) throw new Fejl(400, `Der er allerede ${antal} tilmeldt. Fjern nogen først, eller vælg mindst ${antal} pladser.`);
+  const r = await sql`update vagter set titel = ${tekst(body.titel, 120, "vagt", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
+    sted = ${tekst(body.sted, 120, "sted")}, pladser = ${pladser} where id = ${p.id}`;
+  if (!r.count) throw new Fejl(404, "Vagten findes ikke længere.");
+  return { ok: true };
+});
+rute("DELETE", "/vagter/:id/tilmeldte/:bid", async ({ bruger, p }) => {
+  kraevAdmin(bruger);
+  await sql`delete from tilmeldinger where vagt_id = ${p.id} and bruger_id = ${p.bid}`;
+  return { ok: true };
 });
 rute("DELETE", "/vagter/:id", async ({ bruger, p }) => { kraevAdmin(bruger); await sql`delete from vagter where id = ${p.id}`; return { ok: true }; });
 rute("POST", "/vagter/:id/tilmeld", async ({ bruger, p }) => {
@@ -223,6 +263,8 @@ rute("GET", "/beskeder", async ({ bruger }) => {
 rute("POST", "/beskeder", async ({ bruger, body }) => {
   kraevSkriv(bruger);
   const t = tekst(body.tekst, 1000, "beskeden", true);
+  const [{ antal }] = await sql`select count(*)::int antal from beskeder where bruger_id = ${bruger.id} and oprettet > now() - interval '1 hour'`;
+  if (antal >= 30) throw new Fejl(429, "Du har skrevet mange beskeder den sidste time. Vent lidt, og prøv igen.");
   await sql`insert into beskeder (bruger_id, tekst) values (${bruger.id}, ${t})`;
   return { ok: true };
 });
@@ -246,6 +288,8 @@ rute("GET", "/nyheder/:id/pdf", async ({ p, res }) => {
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `inline; filename="${(n.pdf_navn || "dokument.pdf").replace(/[^\w.-]/g, "_")}"`);
   res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Content-Security-Policy", "sandbox"); // indhold i PDF'en kan ikke køre som en del af siden
+  res.setHeader("X-Content-Type-Options", "nosniff");
   res.end(n.pdf);
   return undefined;
 });
@@ -255,6 +299,7 @@ rute("POST", "/nyheder", async ({ bruger, body }) => {
   if (body.pdf) {
     pdf = Buffer.from(String(body.pdf), "base64");
     if (pdf.subarray(0, 4).toString() !== "%PDF") throw new Fejl(400, "Filen skal være en PDF.");
+    if (pdf.length > 3.2 * 1024 * 1024) throw new Fejl(413, "PDF'en er for stor. Den må højst fylde 3 MB.");
   }
   await sql`insert into nyheder (titel, tekst, dato, pdf, pdf_navn) values (
     ${tekst(body.titel, 160, "overskrift", true)}, ${tekst(body.tekst, 5000, "tekst")}, ${dato(body.dato)}, ${pdf}, ${pdf ? tekst(body.pdf_navn, 120, "filnavn") : null})`;
@@ -336,7 +381,7 @@ rute("DELETE", "/forslag/:id", async ({ bruger, p }) => {
 
 // ---------- Hovedfunktion ----------
 let skemaKlar = null;
-const sikrSkema = () => (skemaKlar ||= sql.unsafe(readFileSync(new URL("../db/skema.sql", import.meta.url), "utf8")).catch((e) => { skemaKlar = null; throw e; }));
+const sikrSkema = () => (skemaKlar ||= sql.unsafe(SKEMA).catch((e) => { skemaKlar = null; throw e; }));
 
 export default async function handler(req, res) {
   const u = new URL(req.url, "http://x");
@@ -347,7 +392,9 @@ export default async function handler(req, res) {
     // Beskyttelse mod at andre sider sender handlinger på vegne af en indlogget bruger (CSRF).
     if (req.method !== "GET") {
       const origin = req.headers.origin;
-      if (origin && new URL(origin).host !== req.headers.host) throw new Fejl(403, "Forespørgslen blev afvist.");
+      let fremmed = false;
+      try { fremmed = !!origin && new URL(origin).host !== req.headers.host; } catch { fremmed = true; }
+      if (fremmed) throw new Fejl(403, "Forespørgslen blev afvist.");
       if (!/application\/json/.test(req.headers["content-type"] || "")) throw new Fejl(415, "Ugyldig forespørgsel.");
     }
     let fundet = null;
@@ -367,10 +414,17 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.end(JSON.stringify(svar));
   } catch (e) {
-    const status = e.status || (e.code === "23514" ? 400 : 500);
-    if (status === 500) console.error(e);
+    // Databasefejl oversættes til forståelige beskeder uden tekniske detaljer.
+    let status = e.status, besked = e.message;
+    if (!status) {
+      if (e.code === "23514" || e.code === "23502") { status = 400; besked = "Nogle af oplysningerne er ugyldige eller for lange."; }
+      else if (e.code === "23505") { status = 409; besked = "Det findes allerede."; }
+      else if (e.code === "23503") { status = 404; besked = "Det findes ikke længere."; }
+      else if (String(e.code || "").startsWith("22")) { status = 400; besked = "Ugyldig dato, tid eller værdi."; }
+      else { status = 500; besked = "Der skete en fejl på serveren. Prøv igen."; console.error(e); }
+    }
     res.statusCode = status;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.end(JSON.stringify({ fejl: status === 500 ? "Der skete en fejl på serveren. Prøv igen." : e.message }));
+    res.end(JSON.stringify({ fejl: besked }));
   }
 }

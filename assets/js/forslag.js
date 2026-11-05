@@ -33,7 +33,7 @@ function visForslag(f) {
   if (admin) {
     const id = "fs-" + f.id;
     const valg = h("select", { id: id + "-status" }, Object.entries(STATUS).map(([v, t]) => h("option", { value: v, selected: f.status === v }, t)));
-    const svar = h("input", { id: id + "-svar", maxlength: "1000", value: f.svar || "", placeholder: "Kort svar til medlemmet (valgfrit)" });
+    const svar = h("input", { id: id + "-svar", maxlength: "1000", value: f.svar || "", placeholder: "Svar (valgfrit)" });
     const gem = h("button", { class: "btn sm", type: "button" }, "Gem");
     gem.addEventListener("click", async () => {
       gem.disabled = true;

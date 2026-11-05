@@ -103,7 +103,7 @@ p { margin: 0 0 12px; }
 .bruger a, .bruger button { font-size: 15px; }
 .bruger .navn { color: var(--muted); }
 
-@media (max-width: 1340px) {
+@media (max-width: 1140px) {
   .menu-knap { display: inline-flex; }
   .hovedmenu { order: 3; flex-basis: 100%; display: none; }
   .hovedmenu.aaben { display: block; }
@@ -169,7 +169,7 @@ p { margin: 0 0 12px; }
 .gitter { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
 .gitter.to { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 .kort { background: var(--card); border-radius: 16px; box-shadow: var(--sh); padding: 28px; }
-.kort.farvet { background: var(--blaa); color: #fff; }
+.kort.farvet { background: #1d5f93; color: #fff; }
 .kort.farvet a:not(.btn) { color: #ffe2bf; }
 .kort.farvet .eyebrow { color: #ffe2bf; }
 .kort > :last-child { margin-bottom: 0; }
@@ -307,7 +307,7 @@ details.admin-boks[open] > summary::before { content: "\2212"; }
 @media (max-width: 820px) { .rul-hint { display: block; } }
 
 /* Logget ind på mellemstore skærme: hold navn og "Log ud" på samme linje som menuen */
-@media (min-width: 1341px) and (max-width: 1400px) {
+@media (min-width: 1141px) and (max-width: 1400px) {
   .top-indre { gap: 8px 12px; }
   .hovedmenu a, .hovedmenu a[aria-current="page"] { padding: 8px 11px; }
   .bruger { gap: 8px; }
@@ -328,7 +328,7 @@ details.admin-boks[open] > summary::before { content: "\2212"; }
 
 /* ---------- Polering ---------- */
 .brand span { white-space: nowrap; }
-@media (max-width: 1340px) {
+@media (max-width: 1140px) {
   .hovedmenu.aaben { border-top: 1px solid var(--line); margin-top: 6px; }
   .hovedmenu ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px; }
   .bruger { flex-wrap: wrap; gap: 8px 14px; border-top: 1px solid var(--line); padding-top: 12px; }
@@ -350,4 +350,123 @@ details.admin-boks[open] > summary::before { content: "\2212"; }
   .felter { grid-template-columns: 1fr 1fr; }
   .felt { min-height: 104px; }
   .felt:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* Handlinger i tabeller */
+.tabel td.handlinger { white-space: nowrap; }
+.tabel td.handlinger .btn + .btn { margin-left: 6px; }
+ul.tilmeldte { list-style: none; margin: 4px 0 0; padding: 0; font-size: 15px; }
+ul.tilmeldte li { display: flex; align-items: center; gap: 6px; }
+.fjern-knap { background: none; border: 1.5px solid var(--line); color: var(--fejl); border-radius: 999px; min-width: 32px; min-height: 32px; padding: 0 8px; font: 700 14px system-ui; cursor: pointer; }
+.fjern-knap:hover { border-color: var(--fejl); }
+details.admin-boks[open] { box-shadow: 0 0 0 2px var(--acc), var(--sh); }
+
+/* Billedfremviser */
+dialog.fremviser { border: 0; padding: 0; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; margin: 0; }
+dialog.fremviser::backdrop { background: rgba(8, 20, 30, .92); }
+dialog.fremviser figure { margin: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 72px 72px; gap: 14px; }
+dialog.fremviser img { max-width: 100%; max-height: calc(100vh - 190px); object-fit: contain; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+dialog.fremviser figcaption { color: #eaf3fa; text-align: center; max-width: 760px; font-size: 16px; }
+dialog.fremviser figcaption b { display: block; color: #fff; font: 600 19px Georgia, serif; }
+dialog.fremviser button { position: fixed; background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 999px; width: 52px; height: 52px; font: 400 34px/1 system-ui; cursor: pointer; }
+dialog.fremviser button:hover { background: rgba(255,255,255,.28); }
+.fv-luk { top: 14px; right: 14px; }
+.fv-forrige { left: 14px; top: 50%; transform: translateY(-50%); }
+.fv-naeste { right: 14px; top: 50%; transform: translateY(-50%); }
+.fv-taeller { position: fixed; bottom: 14px; left: 0; right: 0; text-align: center; color: #a9c3d6; font-size: 14px; margin: 0; }
+@media (max-width: 600px) {
+  dialog.fremviser figure { padding: 64px 12px 96px; }
+  .fv-forrige, .fv-naeste { top: auto; bottom: 40px; transform: none; }
+  .fv-taeller { bottom: 56px; }
+}
+
+/* Mørk tilstand: lysere varianter af tekstfarver, så kontrasten holder */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .status-ny { color: #f5b38a; }
+  :root:not([data-theme="light"]) .status-igang { color: #7fd3e0; }
+  :root:not([data-theme="light"]) .side-forslag .btn:not(.alt):not(.fare) { background: #b65a22; }
+}
+:root[data-theme="dark"] .status-ny { color: #f5b38a; }
+:root[data-theme="dark"] .status-igang { color: #7fd3e0; }
+
+/* ================= Rettelser efter uafhængig gennemgang ================= */
+/* 10: skjult "spring til indhold" må ikke kaste skygge */
+.spring-til-indhold { top: auto; transform: translateY(-200%); box-shadow: none; }
+.spring-til-indhold:focus { top: 12px; transform: none; box-shadow: var(--sh); }
+/* 1: skjult tekst holdes inde i sin boks */
+.skjult-tekst { clip-path: inset(50%); }
+.tabel-ramme, .flueben, .felt, .kort { position: relative; }
+/* 6: ingen fokusramme om overskrifter, der kun får fokus fra scriptet */
+[tabindex="-1"]:focus { outline: none; }
+/* 7: større trykflader på tekstknapper */
+.linkknap { display: inline-flex; align-items: center; min-height: 40px; padding: 4px 6px; margin-left: -6px; }
+/* 2: bestyrelseslisten */
+dl.bestyrelse { grid-template-columns: minmax(0, auto) 1fr; }
+dl.bestyrelse dd { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  dl.bestyrelse { grid-template-columns: 1fr; gap: 0; }
+  dl.bestyrelse dt { font-size: 14px; }
+  dl.bestyrelse dd { margin-bottom: 10px; }
+}
+.kort { min-width: 0; }
+/* 12: adressen i toppen ombrydes pænt */
+.hero .eyebrow .del { white-space: nowrap; }
+@media (max-width: 600px) { .hero .eyebrow .skille { display: none; } .hero .eyebrow .del { display: block; } }
+/* 8: forslag – status og svar på linje */
+.forslag .behandl { align-items: end; }
+.forslag .behandl label { margin: 0 0 4px; }
+.forslag .behandl select, .forslag .behandl input { height: 46px; }
+/* 9: ingen huller i gitteret på tablet */
+@media (min-width: 601px) and (max-width: 1000px) {
+  .felter { grid-template-columns: repeat(6, 1fr); }
+  .felter .felt { grid-column: span 2; }
+  .felter .felt:nth-child(n+4) { grid-column: span 3; }
+  .gitter:not(.to) { grid-template-columns: 1fr 1fr; }
+  .gitter:not(.to) > .kort:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+/* 3: tælleren i billedfremviseren må ikke dække pilene */
+.fv-taeller { pointer-events: none; }
+
+/* 5: kontomenu i toppen (navn, profil, administration, log ud) */
+.konto { position: relative; }
+.bruger .konto .navn { color: inherit; }
+.konto > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; min-height: 40px; padding: 6px 14px 6px 6px;
+  border: 1.5px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 600; color: var(--ink); max-width: 210px; }
+.konto > summary::-webkit-details-marker { display: none; }
+.konto > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); margin-left: 2px; flex: none; }
+.konto[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+.konto .initial { width: 28px; height: 28px; border-radius: 50%; background: var(--blaa); color: #fff; display: grid; place-items: center; font-size: 13px; flex: none; }
+.konto .kontonavn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.konto-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 230px; background: var(--card); border-radius: 14px; box-shadow: 0 12px 32px rgba(18,52,77,.18); border: 1px solid var(--line); padding: 8px; z-index: 30; }
+.konto-menu a, .konto-menu button { display: flex; width: 100%; align-items: center; min-height: 44px; padding: 8px 12px; border-radius: 10px; color: var(--ink); text-decoration: none; background: none; border: 0; font: inherit; font-size: 16px; cursor: pointer; text-align: left; }
+.konto-menu a:hover, .konto-menu button:hover { background: var(--bg); }
+.konto-menu .rolle { padding: 6px 12px 10px; font-size: 14px; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+@media (max-width: 1140px) {
+  .konto { width: 100%; }
+  .konto > summary { display: none; }
+  .konto-menu { position: static; box-shadow: none; border: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px; min-width: 0; background: none; }
+  .konto-menu .rolle { grid-column: 1 / -1; border: 0; margin: 0; padding: 0 12px; }
+}
+
+/* 4: tabeller bliver til kort på smalle skærme */
+@media (max-width: 820px) {
+  .rul-hint { display: none !important; }
+  table.tabel.kortvisning, table.tabel.kortvisning.bred { min-width: 0; }
+  .tabel.kortvisning thead { display: none; }
+  .tabel.kortvisning tbody, .tabel.kortvisning td { display: block; }
+  .tabel.kortvisning tr { display: flex; flex-direction: column; }
+  .tabel.kortvisning td.titelcelle { order: -1; }
+  .tabel.kortvisning tr.maaned th { display: block; padding: 12px 16px; }
+  .tabel.kortvisning tr:not(.maaned) { padding: 12px 16px 14px; border-bottom: 1px solid var(--line); }
+  .tabel.kortvisning td { border: 0; padding: 3px 0; }
+  .tabel.kortvisning td[data-label]::before { content: attr(data-label); display: inline-block; min-width: 92px; color: var(--muted); font-size: 14px; }
+  .tabel.kortvisning td.titelcelle { font-size: 18px; padding-bottom: 4px; }
+  .tabel.kortvisning td.titelcelle::before { display: none !important; }
+  .tabel.kortvisning td.valgcelle, .tabel.kortvisning td.handlinger { padding-top: 8px; }
+  .tabel.kortvisning td.valgcelle::before, .tabel.kortvisning td.handlinger::before { display: none !important; }
+  .tabel.kortvisning tr.min td:first-child { box-shadow: none; }
+  .tabel.kortvisning tr.min { box-shadow: inset 5px 0 0 var(--acc); background: color-mix(in srgb, var(--acc) 14%, transparent); }
+  .tabel.kortvisning tr.min td { background: none; }
+  .tabel.kortvisning tbody tr:not(.maaned):hover td { background: none; }
+  .tabel.kortvisning ul.tilmeldte { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; }
 }

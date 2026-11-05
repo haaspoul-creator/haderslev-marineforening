@@ -52,7 +52,7 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "db/skema.sql"
+      "includeFiles": "api/_skema.sql"
     }
   }
 }

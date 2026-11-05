@@ -111,7 +111,26 @@ export function loginBoks(hvad) {
 // ---------- Menu og login-felt i toppen ----------
 const knap = $(".menu-knap");
 const menu = $("#hovedmenu");
-if (knap && menu) knap.addEventListener("click", () => knap.setAttribute("aria-expanded", String(menu.classList.toggle("aaben"))));
+function saetMenu(aaben) {
+  menu.classList.toggle("aaben", aaben);
+  knap.setAttribute("aria-expanded", String(aaben));
+  knap.lastChild.textContent = aaben ? "Luk" : "Menu";
+}
+if (knap && menu) {
+  knap.addEventListener("click", () => saetMenu(!menu.classList.contains("aaben")));
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (menu.classList.contains("aaben")) { saetMenu(false); knap.focus(); }
+    const k = document.querySelector(".konto[open]");
+    if (k) { k.open = false; k.querySelector("summary").focus(); }
+  });
+}
+// Luk kontomenuen ved klik udenfor
+const smal = matchMedia("(max-width: 1140px)");
+document.addEventListener("click", (e) => { const k = document.querySelector(".konto[open]"); if (k && !smal.matches && !k.contains(e.target)) k.open = false; });
+// I mobilmenuen er kontopunkterne altid foldet ud.
+const kontoFold = () => { const k = document.querySelector(".konto"); if (k) k.open = smal.matches; };
+smal.addEventListener("change", kontoFold);
 
 (async () => {
   const felt = $("#bruger");
@@ -119,7 +138,47 @@ if (knap && menu) knap.addEventListener("click", () => knap.setAttribute("aria-e
   const b = await hentBruger();
   if (!b) return; // "Log ind"-knappen står der allerede
   felt.textContent = "";
-  felt.append(h("a", { class: "navn", href: "/log-ind/", title: "Min profil" }, b.navn));
-  if (erAdmin(b)) felt.append(h("a", { href: "/administration/" }, "Administration"));
-  felt.append(h("button", { class: "btn sm alt", type: "button", onclick: logUd }, "Log ud"));
+  const rolle = { admin: "Administrator", medlem: "Medlem", laeser: "Kan kun læse" }[b.rolle] || "";
+  const initialer = b.navn.split(/\s+/).map((d) => d[0]).join("").slice(0, 2).toUpperCase();
+  felt.append(h("details", { class: "konto" },
+    h("summary", { "aria-label": `Konto: ${b.navn}` }, h("span", { class: "initial", "aria-hidden": "true" }, initialer), h("span", { class: "kontonavn navn" }, b.navn)),
+    h("div", { class: "konto-menu" },
+      h("div", { class: "rolle" }, `Logget ind som ${b.navn} · ${rolle}`),
+      h("a", { href: "/log-ind/" }, "Min profil"),
+      h("a", { href: "/forslag/" }, "Forslag til hjemmesiden"),
+      erAdmin(b) ? h("a", { href: "/administration/" }, "Administration") : null,
+      h("button", { type: "button", onclick: logUd }, "Log ud"))));
+  kontoFold();
 })();
+
+// Formular der både kan oprette og rette (bruges til arrangementer og vagter).
+// ret(række) fylder formularen og åbner den; gem(data, id) kaldes ved indsendelse.
+export function redigerbarForm({ form, boks, overskrift, knaptekst, gem }) {
+  const summary = boks.querySelector("summary");
+  const knap = form.querySelector("button[type=submit]");
+  const annuller = h("button", { class: "btn alt sm", type: "button", hidden: true }, "Annuller");
+  knap.after(annuller);
+  let id = null;
+  const nulstil = () => {
+    id = null; form.reset();
+    summary.textContent = overskrift; knap.textContent = knaptekst; annuller.hidden = true;
+    form.dispatchEvent(new Event("nulstillet"));
+  };
+  annuller.addEventListener("click", () => { nulstil(); boks.open = false; });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    knap.disabled = true;
+    try { if (await gem(Object.fromEntries(new FormData(form)), id)) nulstil(); }
+    finally { knap.disabled = false; }
+  });
+  return {
+    ret(raekke) {
+      id = raekke.id;
+      for (const [k, v] of Object.entries(raekke)) if (form.elements[k] && form.elements[k].type !== "file") form.elements[k].value = v ?? "";
+      summary.textContent = `Ret "${raekke.titel}"`; knap.textContent = "Gem ændringer"; annuller.hidden = false;
+      boks.open = true;
+      boks.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      form.elements[0].focus({ preventScroll: true });
+    },
+  };
+}

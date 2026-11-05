@@ -8,7 +8,7 @@ const B = process.env.BASE || "http://localhost:8080";
 if (!/localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL)) { console.error("Kun mod en lokal database!"); process.exit(1); }
 const sql = postgres(process.env.DATABASE_URL, { onnotice: () => {} });
 await sql.unsafe("drop schema public cascade; create schema public;");
-await sql.unsafe(readFileSync(new URL("../db/skema.sql", import.meta.url), "utf8"));
+await sql.unsafe(readFileSync(new URL("../api/_skema.sql", import.meta.url), "utf8"));
 
 let fejl = 0;
 const tjek = (n, ok) => { console.log(`${ok ? "OK  " : "FEJL"} ${n}`); if (!ok) fejl++; };
@@ -132,6 +132,37 @@ tjek("admin kan fjerne medlem", ok(await admin("/medlemmer/" + anna.id, "DELETE"
 tjek("fjernet medlems besked står som Tidligere medlem", (await admin("/beskeder")).data.some((b) => b.tekst === "Sidste besked" && b.navn === null));
 tjek("fjernet medlem er logget ud", (await annaNy("/mig")).data.bruger === null);
 
+const carlFoer = await medlem("Carl Nul", "carl0@test.dk");
+const dora0 = await medlem("Dora Nul", "dora0@test.dk");
+// Rettelser, fejlbeskeder og sikkerhed
+const a2 = (await admin("/arrangementer", "POST", { titel: "Grill", dato: "2030-03-01" })).data;
+tjek("admin kan rette arrangement", ok(await admin("/arrangementer/" + a2.id, "PATCH", { titel: "Grillaften", dato: "2030-03-02", tid: "18:30", sted: "Havnen", beskrivelse: "" })));
+tjek("rettelsen er gemt", (await anon("/arrangementer")).data.some((a) => a.titel === "Grillaften" && a.dato === "2030-03-02" && a.tid === "18:30"));
+tjek("medlem kan IKKE rette arrangement", (await bent.k("/arrangementer/" + a2.id, "PATCH", { titel: "x", dato: "2030-03-02" })).status === 403);
+const ugyldig = await admin("/arrangementer", "POST", { titel: "x", dato: "2030-02-31" });
+tjek("ugyldig dato giver pæn fejl (400): " + ugyldig.data.fejl, ugyldig.status === 400);
+tjek("kæmpe id giver 400/404, ikke 500", [400, 404].includes((await admin("/arrangementer/99999999999999999999999", "PATCH", { titel: "x", dato: "2030-01-01" })).status));
+tjek("Origin: null afvises", (await bent.k("/beskeder", "POST", { tekst: "x" }, { Origin: "null" })).status === 403);
+const v3 = (await admin("/vagter", "POST", { titel: "Bro", dato: "2030-04-01", pladser: 2 })).data;
+await carlFoer.k(`/vagter/${v3.id}/tilmeld`, "POST");
+await admin(`/vagter/${v3.id}/tilmeld`, "POST");
+const forFaa = await admin("/vagter/" + v3.id, "PATCH", { titel: "Bro", dato: "2030-04-01", pladser: 1 });
+tjek("kan ikke sætte færre pladser end tilmeldte: " + forFaa.data.fejl, forFaa.status === 400);
+tjek("admin kan rette vagt", ok(await admin("/vagter/" + v3.id, "PATCH", { titel: "Brovagt", dato: "2030-04-02", tid: "09:00", sted: "Broen", pladser: 3 })));
+tjek("medlem kan IKKE fjerne andre fra vagt", (await carlFoer.k(`/vagter/${v3.id}/tilmeldte/${(await admin("/mig")).data.bruger.id}`, "DELETE")).status === 403);
+tjek("admin kan fjerne en tilmeldt", ok(await admin(`/vagter/${v3.id}/tilmeldte/${carlFoer.id}`, "DELETE")));
+tjek("fjernet fra vagt", (await admin("/vagter")).data.find((x) => x.id === v3.id).tilmeldte.length === 1);
+const andre = klient(); await andre("/log-ind", "POST", { email: "carl0@test.dk", kode: KODE });
+await carlFoer.k("/mig/kode", "POST", { kode: "EnNyKode123" });
+tjek("skift kode logger andre enheder ud", (await andre("/mig")).data.bruger === null && (await carlFoer.k("/mig")).data.bruger !== null);
+const t0 = Date.now(); await klient()("/log-ind", "POST", { email: "findes.ikke@test.dk", kode: "x" }); const tIkke = Date.now() - t0;
+const t1 = Date.now(); await klient()("/log-ind", "POST", { email: "dora0@test.dk", kode: "x" }); const tFindes = Date.now() - t1;
+tjek(`samme svartid om e-mail findes eller ej (${tIkke} / ${tFindes} ms)`, tIkke > tFindes * 0.4);
+const pdfR = await fetch(B + (await anon("/nyheder")).data.find((n) => n.pdf_url?.startsWith("/api/")).pdf_url);
+tjek("PDF sendes i sandkasse", (pdfR.headers.get("content-security-policy") || "").includes("sandbox"));
+for (let i = 0; i < 30; i++) await dora0.k("/beskeder", "POST", { tekst: "spam " + i });
+tjek("max 30 beskeder i timen", (await dora0.k("/beskeder", "POST", { tekst: "en til" })).status === 429);
+
 // Forslag
 const carl = await medlem("Carl Carlsen", "carl@test.dk");
 const dora = await medlem("Dora Dam", "dora@test.dk", "laeser");
@@ -156,7 +187,7 @@ tjek("eget ubehandlet forslag kan trækkes tilbage", ok(await dora.k("/forslag/"
 tjek("admin kan slette forslag", ok(await admin("/forslag/" + fC.id, "DELETE")));
 
 // Statiske filer beskyttet
-for (const sti of ["/api/index.js", "/tools/test.mjs", "/db/skema.sql", "/package.json"]) {
+for (const sti of ["/api/index.js", "/tools/test.mjs", "/api/_skema.sql", "/package.json"]) {
   const r = await fetch(B + sti);
   tjek(`${sti} er ikke tilgængelig`, r.status === 404 || r.status === 401);
 }

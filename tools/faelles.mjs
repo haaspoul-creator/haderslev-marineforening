@@ -58,7 +58,8 @@ function top(aktiv) {
 function fod() {
   const k = KONTAKT;
   const tlf = k.telefon.replace(/\s/g, "");
-  const fb = k.facebook ? `<a href="${k.facebook}" rel="noopener">Haderslev Marineforening på Facebook</a>` : "[Link til Facebook-side]";
+  // Uden Facebook-link vises boksen "Følg os" slet ikke.
+  const fb = k.facebook ? `\n    <div>\n      <b>Følg os</b><br>\n      <a href="${k.facebook}" rel="noopener">Haderslev Marineforening på Facebook</a>\n    </div>` : "";
   return `<footer class="fod">
   <div class="fod-indre">
     <div>
@@ -75,11 +76,7 @@ function fod() {
       <b>Marinestuen</b><br>
       Åben for hyggeligt samvær<br>
       alle normale lørdage kl. 10–13
-    </div>
-    <div>
-      <b>Følg os</b><br>
-      ${fb}
-    </div>
+    </div>${fb}
     <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen. · <a href="/forslag/">Forslag til hjemmesiden</a></p>
   </div>
 </footer>`;
