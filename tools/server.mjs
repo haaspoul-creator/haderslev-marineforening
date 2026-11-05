@@ -7,7 +7,7 @@ import handler from "../api/index.js";
 
 const ROD = new URL("..", import.meta.url).pathname;
 const TYPER = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml",
-  ".jpg": "image/jpeg", ".png": "image/png", ".pdf": "application/pdf", ".xml": "application/xml", ".txt": "text/plain" };
+  ".jpg": "image/jpeg", ".png": "image/png", ".pdf": "application/pdf", ".xml": "application/xml", ".txt": "text/plain", ".mp4": "video/mp4", ".vtt": "text/vtt" };
 const SKJULT = /^\/(api|tools|node_modules|\.git)(\/|$)|\.(md|json|mjs)$/;
 
 http.createServer(async (req, res) => {

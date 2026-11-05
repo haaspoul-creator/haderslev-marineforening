@@ -43,6 +43,16 @@ export function visStatus(el, tekst, type = "") {
   el.className = "note status" + (type ? " " + type : "");
   el.hidden = !tekst;
   if (tekst) el.setAttribute("role", type === "fejl" ? "alert" : "status");
+  // Er beskeden rullet ud af syne, vises den også kort nederst på skærmen.
+  const r = el.getBoundingClientRect();
+  if (tekst && (r.bottom < 70 || r.top > innerHeight)) {
+    let t = document.querySelector(".toast");
+    if (!t) { t = h("div", { class: "toast", "aria-hidden": "true" }); document.body.append(t); }
+    t.textContent = tekst;
+    t.className = "toast vis" + (type === "fejl" ? " fejl" : "");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove("vis"), 4000);
+  }
 }
 export const fejlTekst = (e) => (e && e.message) || "Der skete en fejl. Prøv igen.";
 
@@ -126,7 +136,7 @@ if (knap && menu) {
   });
 }
 // Luk kontomenuen ved klik udenfor
-const smal = matchMedia("(max-width: 1140px)");
+const smal = matchMedia("(max-width: 1200px)");
 document.addEventListener("click", (e) => { const k = document.querySelector(".konto[open]"); if (k && !smal.matches && !k.contains(e.target)) k.open = false; });
 // I mobilmenuen er kontopunkterne altid foldet ud.
 const kontoFold = () => { const k = document.querySelector(".konto"); if (k) k.open = smal.matches; };

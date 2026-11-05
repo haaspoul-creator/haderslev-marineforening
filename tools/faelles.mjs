@@ -30,6 +30,7 @@ const SIDER = {
   "log-ind/index.html": "",
   "administration/index.html": "",
   "forslag/index.html": "",
+  "rundvisning/index.html": "",
   "404.html": "",
 };
 
@@ -77,7 +78,7 @@ function fod() {
       Åben for hyggeligt samvær<br>
       alle normale lørdage kl. 10–13
     </div>${fb}
-    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen. · <a href="/forslag/">Forslag til hjemmesiden</a></p>
+    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen. · <a href="/rundvisning/">Se rundvisningen</a> · <a href="/forslag/">Forslag til hjemmesiden</a></p>
   </div>
 </footer>`;
 }
