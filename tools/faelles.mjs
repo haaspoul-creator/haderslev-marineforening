@@ -29,6 +29,7 @@ const SIDER = {
   "galleri/index.html": "galleri",
   "log-ind/index.html": "",
   "administration/index.html": "",
+  "forslag/index.html": "",
   "404.html": "",
 };
 
@@ -79,7 +80,7 @@ function fod() {
       <b>Følg os</b><br>
       ${fb}
     </div>
-    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen.</p>
+    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen. · <a href="/forslag/">Forslag til hjemmesiden</a></p>
   </div>
 </footer>`;
 }

@@ -14,7 +14,13 @@
 ## Beskeder (medlemmer)
 - Skriv i feltet og tryk **Send besked**. Du kan slette dine egne beskeder (tryk **Slet** to gange).
 
+## Forslag til hjemmesiden
+- Har du en idé eller en rettelse? Tryk **Forslag til hjemmesiden** nederst på siden (eller under dit navn → Min profil). Vælg siden, skriv forslaget og tryk **Send forslag**.
+- Du kan følge dit forslag og se bestyrelsens svar. Et forslag, der ikke er behandlet endnu, kan du trække tilbage.
+
 ## For administratorer
+**Forslag:** Gå til **Forslag** (link under Administration). Sæt status (Ny, I gang, Udført, Ikke aktuelt), skriv evt. et kort svar og tryk **Gem**. Medlemmet ser svaret med det samme.
+
 **Tilføj arrangement:** Gå til **Arrangementskalender** → tryk **Tilføj arrangement** → udfyld titel og dato (tid, sted og beskrivelse er valgfrit) → **Tilføj til kalenderen**. Arrangementet vises straks, også på forsiden som "Næste arrangement". Slet med **Slet** (to tryk).
 
 **Tilføj vagt:** Gå til **Vagter** → **Tilføj vagt** → udfyld vagt, dato og **antal pladser** → **Tilføj vagt**. Hvis du sletter en vagt, slettes tilmeldingerne også.

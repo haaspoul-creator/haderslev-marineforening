@@ -81,4 +81,18 @@ insert into nyheder (titel, tekst, pdf_url, dato)
 select 'Ankerposten nr. 3/2026',
   'Marinestuen er åben for hyggeligt samvær alle normale lørdage kl. 10–13. Foreningen er flyttet til Kreditbanken og har fået sit eget MobilePay-nummer: 60 55 39 22. Kontingentet er stadig 550 kr. Der er kommet nye medlemmer – både fuldgyldige og passive – og fællesspisningen med grillet lammekølle i april fik rigtig god opbakning.',
   '/dokumenter/ankerposten-2026-3.pdf', '2026-07-01'
-where not exists (select 1 from nyheder);
+-- kun ved allerførste opsætning, så en slettet nyhed ikke dukker op igen
+where not exists (select 1 from nyheder) and not exists (select 1 from brugere);
+
+-- Forslag til indhold på hjemmesiden (fra medlemmer, behandles af administratorer)
+create table if not exists forslag (
+  id        bigint generated always as identity primary key,
+  bruger_id bigint references brugere (id) on delete set null,
+  side      text not null check (side in ('forside', 'omos', 'kalender', 'vagter', 'beskeder', 'galleri', 'andet')),
+  tekst     text not null check (char_length(btrim(tekst)) between 1 and 2000),
+  status    text not null default 'ny' check (status in ('ny', 'igang', 'udfoert', 'afvist')),
+  svar      text not null default '' check (char_length(svar) <= 1000),
+  oprettet  timestamptz not null default now(),
+  opdateret timestamptz not null default now()
+);
+create index if not exists forslag_oprettet on forslag (oprettet desc);

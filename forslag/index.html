@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forslag til hjemmesiden – Haderslev Marineforening</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#9c4a1a">
+<link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="side-forslag">
+<!-- FÆLLES:TOP -->
+<a class="spring-til-indhold" href="#indhold-start">Spring til indhold</a>
+<header class="top">
+  <div class="top-indre">
+    <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="19" fill="#2b7bb9"/><circle cx="20" cy="11" r="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M20 14v17M14 18h12M11 25c0 5 4 7 9 7s9-2 9-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg><span>Haderslev Marineforening</span></a>
+    <button class="menu-knap" type="button" aria-expanded="false" aria-controls="hovedmenu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Menu
+    </button>
+    <nav class="hovedmenu" id="hovedmenu" aria-label="Hovedmenu">
+      <ul>
+        <li><a href="/">Hjem</a></li>
+        <li><a href="/om-os/">Om os</a></li>
+        <li><a href="/arrangementskalender/">Arrangementskalender</a></li>
+        <li><a href="/vagter/">Vagter</a></li>
+        <li><a href="/beskeder/">Beskeder</a></li>
+        <li><a href="/galleri/">Galleri</a></li>
+      </ul>
+    </nav>
+    <div class="bruger" id="bruger"><a class="btn sm alt" href="/log-ind/">Log ind</a></div>
+  </div>
+</header>
+<!-- /FÆLLES:TOP -->
+
+<main id="indhold-start">
+  <div class="sidehoved">
+    <h1>Forslag til hjemmesiden</h1>
+    <p>Har du en idé til nyt indhold, en rettelse eller gode billeder til galleriet? Skriv et forslag, så kigger bestyrelsen på det.</p>
+  </div>
+
+  <div id="status" class="note status" hidden></div>
+
+  <div class="gitter to" id="indhold" hidden>
+    <form class="kort" id="nyt-forslag">
+      <h2>Nyt forslag</h2>
+      <label for="f-side">Hvilken side handler det om?</label>
+      <select id="f-side" name="side" required>
+        <option value="">Vælg …</option>
+        <option value="forside">Forsiden</option>
+        <option value="omos">Om os</option>
+        <option value="kalender">Arrangementskalender</option>
+        <option value="vagter">Vagter</option>
+        <option value="beskeder">Beskeder</option>
+        <option value="galleri">Galleri</option>
+        <option value="andet">Andet / ny side</option>
+      </select>
+      <label for="f-tekst">Dit forslag</label>
+      <textarea id="f-tekst" name="tekst" rows="6" maxlength="2000" required aria-describedby="f-hjaelp"></textarea>
+      <p class="hjaelp" id="f-hjaelp">Skriv gerne præcis, hvad der skal stå, eller hvad der er forkert. Har du billeder, så skriv det, så kontakter vi dig.</p>
+      <div class="form-handling"><button class="btn" type="submit">Send forslag</button></div>
+    </form>
+
+    <section class="kort" aria-labelledby="t-liste">
+      <h2 id="t-liste">Dine forslag</h2>
+      <div id="filter" hidden style="margin-bottom:12px">
+        <label for="f-filter" style="margin-top:0">Vis</label>
+        <select id="f-filter">
+          <option value="aabne">Nye og i gang</option>
+          <option value="alle">Alle</option>
+        </select>
+      </div>
+      <div id="liste"><p class="muted">Henter …</p></div>
+    </section>
+  </div>
+  <div id="login"></div>
+</main>
+
+<!-- FÆLLES:FOD -->
+<footer class="fod">
+  <div class="fod-indre">
+    <div>
+      <b>Haderslev Marineforening</b>
+      <address>Det Maritime Hus<br>Ved Havnen 18<br>6100 Haderslev</address>
+    </div>
+    <div>
+      <b>Kontakt</b><br>
+      Formand Harry Madsen<br>
+      Telefon: <a href="tel:+4540947875">40 94 78 75</a><br>
+      E-mail: <a href="mailto:Harry.madsen@hotmail.com">Harry.madsen@hotmail.com</a>
+    </div>
+    <div>
+      <b>Marinestuen</b><br>
+      Åben for hyggeligt samvær<br>
+      alle normale lørdage kl. 10–13
+    </div>
+    <div>
+      <b>Følg os</b><br>
+      [Link til Facebook-side]
+    </div>
+    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen. · <a href="/forslag/">Forslag til hjemmesiden</a></p>
+  </div>
+</footer>
+<!-- /FÆLLES:FOD -->
+<script type="module" src="/assets/js/forslag.js"></script>
+</body>
+</html>

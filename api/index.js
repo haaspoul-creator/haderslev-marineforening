@@ -297,7 +297,47 @@ rute("DELETE", "/medlemmer/:id", async ({ bruger, p }) => {
   return { ok: true };
 });
 
+// Forslag til indhold (logget ind). Medlemmer ser deres egne, administratorer ser alle.
+const SIDER = ["forside", "omos", "kalender", "vagter", "beskeder", "galleri", "andet"];
+const STATUS = ["ny", "igang", "udfoert", "afvist"];
+rute("GET", "/forslag", async ({ bruger }) => {
+  kraevLogin(bruger);
+  const alle = bruger.rolle === "admin";
+  return sql`select f.id, f.side, f.tekst, f.status, f.svar, f.oprettet, f.opdateret, f.bruger_id, b.navn
+    from forslag f left join brugere b on b.id = f.bruger_id
+    where ${alle} or f.bruger_id = ${bruger.id}
+    order by (f.status in ('ny', 'igang')) desc, f.oprettet desc limit 200`;
+});
+rute("POST", "/forslag", async ({ bruger, body }) => {
+  kraevLogin(bruger);
+  if (!SIDER.includes(body.side)) throw new Fejl(400, "Vælg hvilken side forslaget handler om.");
+  const t = tekst(body.tekst, 2000, "forslaget", true);
+  const [{ antal }] = await sql`select count(*)::int antal from forslag where bruger_id = ${bruger.id} and oprettet > now() - interval '1 day'`;
+  if (antal >= 20) throw new Fejl(429, "Du har sendt mange forslag i dag. Prøv igen i morgen.");
+  await sql`insert into forslag (bruger_id, side, tekst) values (${bruger.id}, ${body.side}, ${t})`;
+  return { ok: true };
+});
+rute("PATCH", "/forslag/:id", async ({ bruger, body, p }) => {
+  kraevAdmin(bruger);
+  if (!STATUS.includes(body.status)) throw new Fejl(400, "Ukendt status.");
+  const r = await sql`update forslag set status = ${body.status}, svar = ${tekst(body.svar, 1000, "svaret")}, opdateret = now() where id = ${p.id}`;
+  if (!r.count) throw new Fejl(404, "Forslaget findes ikke.");
+  return { ok: true };
+});
+rute("DELETE", "/forslag/:id", async ({ bruger, p }) => {
+  kraevLogin(bruger);
+  // Man kan trække sit eget forslag tilbage, så længe det ikke er behandlet. Administratorer kan slette alle.
+  const r = bruger.rolle === "admin"
+    ? await sql`delete from forslag where id = ${p.id}`
+    : await sql`delete from forslag where id = ${p.id} and bruger_id = ${bruger.id} and status = 'ny'`;
+  if (!r.count) throw new Fejl(403, "Du kan kun trække dine egne, ubehandlede forslag tilbage.");
+  return { ok: true };
+});
+
 // ---------- Hovedfunktion ----------
+let skemaKlar = null;
+const sikrSkema = () => (skemaKlar ||= sql.unsafe(readFileSync(new URL("../db/skema.sql", import.meta.url), "utf8")).catch((e) => { skemaKlar = null; throw e; }));
+
 export default async function handler(req, res) {
   const u = new URL(req.url, "http://x");
   // På Vercel omskrives /api/xxx til /api?sti=xxx (se vercel.json).
@@ -318,6 +358,7 @@ export default async function handler(req, res) {
     if (!fundet) throw new Fejl(404, "Ukendt adresse.");
     if (fundet === "metode") throw new Fejl(405, "Ikke tilladt.");
     const [fn, p] = fundet;
+    await sikrSkema();
     const body = req.method === "GET" ? {} : await laesBody(req);
     const bruger = await hentBruger(req);
     const svar = await fn({ req, res, body, bruger, p });

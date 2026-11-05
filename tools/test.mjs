@@ -132,6 +132,29 @@ tjek("admin kan fjerne medlem", ok(await admin("/medlemmer/" + anna.id, "DELETE"
 tjek("fjernet medlems besked står som Tidligere medlem", (await admin("/beskeder")).data.some((b) => b.tekst === "Sidste besked" && b.navn === null));
 tjek("fjernet medlem er logget ud", (await annaNy("/mig")).data.bruger === null);
 
+// Forslag
+const carl = await medlem("Carl Carlsen", "carl@test.dk");
+const dora = await medlem("Dora Dam", "dora@test.dk", "laeser");
+tjek("anonym kan IKKE se forslag", (await anon("/forslag")).status === 401);
+tjek("anonym kan IKKE sende forslag", (await anon("/forslag", "POST", { side: "omos", tekst: "x" })).status === 401);
+tjek("medlem kan sende forslag", ok(await carl.k("/forslag", "POST", { side: "galleri", tekst: "Billeder fra julefrokosten 2026" })));
+tjek("skrivebeskyttet kan også sende forslag", ok(await dora.k("/forslag", "POST", { side: "omos", tekst: "Ret telefonnummeret" })));
+tjek("ukendt side afvises", (await carl.k("/forslag", "POST", { side: "hack", tekst: "x" })).status === 400);
+tjek("tomt forslag afvises", (await carl.k("/forslag", "POST", { side: "omos", tekst: "  " })).status === 400);
+tjek("medlem ser kun egne forslag", (await carl.k("/forslag")).data.length === 1);
+const alleF = (await admin("/forslag")).data;
+tjek("admin ser alle forslag med navn", alleF.length === 2 && alleF.some((f) => f.navn === "Dora Dam"));
+const fC = alleF.find((f) => f.navn === "Carl Carlsen");
+tjek("medlem kan IKKE ændre status", (await carl.k("/forslag/" + fC.id, "PATCH", { status: "udfoert", svar: "" })).status === 403);
+tjek("Dora kan IKKE slette Carls forslag", (await dora.k("/forslag/" + fC.id, "DELETE")).status === 403);
+tjek("admin kan sætte status og svar", ok(await admin("/forslag/" + fC.id, "PATCH", { status: "igang", svar: "Send dem til Harry" })));
+const cf = (await carl.k("/forslag")).data[0];
+tjek("medlem ser status og svar", cf.status === "igang" && cf.svar === "Send dem til Harry");
+tjek("behandlet forslag kan ikke trækkes tilbage", (await carl.k("/forslag/" + fC.id, "DELETE")).status === 403);
+const fD = alleF.find((f) => f.navn === "Dora Dam");
+tjek("eget ubehandlet forslag kan trækkes tilbage", ok(await dora.k("/forslag/" + fD.id, "DELETE")));
+tjek("admin kan slette forslag", ok(await admin("/forslag/" + fC.id, "DELETE")));
+
 // Statiske filer beskyttet
 for (const sti of ["/api/index.js", "/tools/test.mjs", "/db/skema.sql", "/package.json"]) {
   const r = await fetch(B + sti);
