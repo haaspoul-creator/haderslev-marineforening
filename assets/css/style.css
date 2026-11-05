@@ -304,3 +304,11 @@ details.admin-boks[open] > summary::before { content: "\2212"; }
 }
 .rul-hint { display: none; font-size: 14px; color: var(--muted); margin: 8px 0 0; }
 @media (max-width: 820px) { .rul-hint { display: block; } }
+
+/* Logget ind på mellemstore skærme: hold navn og "Log ud" på samme linje som menuen */
+@media (min-width: 1061px) and (max-width: 1400px) {
+  .top-indre { gap: 8px 12px; }
+  .hovedmenu a, .hovedmenu a[aria-current="page"] { padding: 8px 11px; }
+  .bruger { gap: 8px; }
+  .bruger .navn { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

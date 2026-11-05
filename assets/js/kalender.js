@@ -1,16 +1,12 @@
 // Arrangementskalender: offentlig tabel grupperet efter måned. Administratorer kan tilføje og slette.
-import { sb, $, h, visStatus, idagISO, fmtDag, fmtTid, grupperEfterMaaned, danskFejl, hentBruger, erAdmin } from "./app.js";
+import { api, $, h, visStatus, fejlTekst, fmtDag, fmtTid, grupperEfterMaaned, hentBruger, erAdmin, sletKnap } from "./app.js";
 
 const liste = $("#kalender");
 const status = $("#status");
 let admin = false;
 
 async function hent() {
-  const { data, error } = await sb.from("arrangementer")
-    .select("id, titel, dato, tid, sted, beskrivelse")
-    .gte("dato", idagISO()).order("dato").order("tid", { nullsFirst: true });
-  if (error) { visStatus(status, danskFejl(error), "fejl"); return; }
-  vis(data);
+  try { vis(await api("/arrangementer")); } catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
 }
 
 function vis(rows) {
@@ -32,51 +28,38 @@ function vis(rows) {
         h("td", {}, a.tid ? fmtTid(a.tid) : "–"),
         h("td", {}, h("b", {}, a.titel), a.beskrivelse ? h("span", { class: "beskrivelse" }, a.beskrivelse) : null),
         h("td", {}, a.sted || "–"),
-        admin ? h("td", {}, sletKnap(a)) : null));
+        admin ? h("td", {}, sletKnap({
+          label: `Slet ${a.titel} ${fmtDag(a.dato)}`,
+          vedSlet: async () => {
+            try { await api("/arrangementer/" + a.id, { metode: "DELETE" }); visStatus(status, `"${a.titel}" er slettet.`, "ok"); hent(); }
+            catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
+          },
+        })) : null));
     }
     tabel.append(tb);
   }
-  liste.append(h("div", { class: "tabel-ramme", tabindex: "0", role: "region", "aria-label": "Arrangementer (kan rulles sidelæns)" }, tabel), h("p", { class: "rul-hint" }, "Stryg sidelæns på tabellen for at se alle kolonner."));
+  liste.append(h("div", { class: "tabel-ramme", tabindex: "0", role: "region", "aria-label": "Arrangementer (kan rulles sidelæns)" }, tabel),
+    h("p", { class: "rul-hint" }, "Stryg sidelæns på tabellen for at se alle kolonner."));
 }
 
-function sletKnap(a) {
-  const knap = h("button", { class: "btn sm fare", type: "button" }, "Slet");
-  knap.setAttribute("aria-label", `Slet ${a.titel} ${fmtDag(a.dato)}`);
-  knap.addEventListener("click", async () => {
-    if (!knap.dataset.sikker) { knap.dataset.sikker = "1"; knap.textContent = "Er du sikker?"; return; }
-    knap.disabled = true;
-    const { error } = await sb.from("arrangementer").delete().eq("id", a.id);
-    if (error) { visStatus(status, danskFejl(error), "fejl"); knap.disabled = false; return; }
-    visStatus(status, `"${a.titel}" er slettet.`, "ok");
-    hent();
-  });
-  return knap;
-}
-
-async function start() {
-  const { profil } = await hentBruger();
-  admin = erAdmin(profil);
+(async () => {
+  admin = erAdmin(await hentBruger());
   const form = $("#ny-arrangement");
-  if (admin && form) {
+  if (admin) {
     $("#admin-arr").hidden = false;
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const fd = new FormData(form);
-      const ny = {
-        titel: fd.get("titel").trim(), dato: fd.get("dato"), tid: fd.get("tid") || null,
-        sted: fd.get("sted").trim(), beskrivelse: fd.get("beskrivelse").trim()
-      };
-      if (!ny.titel || !ny.dato) { visStatus(status, "Udfyld mindst titel og dato.", "fejl"); return; }
+      const fd = Object.fromEntries(new FormData(form));
       const knap = form.querySelector("button[type=submit]");
       knap.disabled = true;
-      const { error } = await sb.from("arrangementer").insert(ny);
+      try {
+        await api("/arrangementer", { metode: "POST", data: fd });
+        form.reset();
+        visStatus(status, `"${fd.titel.trim()}" er tilføjet til kalenderen.`, "ok");
+        hent();
+      } catch (err) { visStatus(status, fejlTekst(err), "fejl"); }
       knap.disabled = false;
-      if (error) { visStatus(status, danskFejl(error), "fejl"); return; }
-      form.reset();
-      visStatus(status, `"${ny.titel}" er tilføjet til kalenderen.`, "ok");
-      hent();
     });
   }
   hent();
-}
-start();
+})();

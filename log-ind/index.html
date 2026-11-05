@@ -45,15 +45,9 @@
         <input id="login-email" name="email" type="email" autocomplete="email" required>
         <label for="login-kode">Adgangskode</label>
         <input id="login-kode" name="kode" type="password" autocomplete="current-password" required>
-        <div class="form-handling">
-          <button class="btn" type="submit">Log ind</button>
-          <button class="linkknap" type="button" id="glemt-knap">Glemt adgangskode?</button>
-        </div>
-        <hr style="border:0;border-top:1px solid var(--line);margin:22px 0 14px">
-        <p class="muted lille">Kan du ikke huske din adgangskode? Skriv din e-mail ovenfor, og få et link tilsendt, som logger dig ind med det samme.</p>
-        <button class="btn alt sm" type="button" id="link-knap">Send mig et login-link</button>
+        <div class="form-handling"><button class="btn" type="submit">Log ind</button></div>
       </form>
-      <p class="muted lille" style="margin-top:16px">Har du ikke en konto? Kontakt bestyrelsen, så sender vi dig en invitation på e-mail.</p>
+      <p class="muted lille" style="margin-top:16px"><b>Glemt adgangskode, eller har du ikke en konto?</b> Kontakt en fra bestyrelsen. Så får du et personligt link, hvor du vælger en ny adgangskode.</p>
     </section>
 
     <section id="trin-ny-kode" data-trin hidden>
@@ -114,8 +108,6 @@
   </div>
 </footer>
 <!-- /FÆLLES:FOD -->
-<script src="/assets/vendor/supabase.js"></script>
-<script src="/assets/js/config.js"></script>
 <script type="module" src="/assets/js/login.js"></script>
 </body>
 </html>

@@ -1,6 +1,10 @@
 # Haderslev Marineforening – hjemmeside
 
-Det er en statisk side (HTML, CSS og JavaScript uden byggetrin) på **Netlify** (gratis). Database og login ligger hos **Supabase** (gratis plan).
+Den enklest mulige opbygning:
+- **Sider:** almindelige HTML-, CSS- og JavaScript-filer uden byggetrin.
+- **Server:** én fil, `api/index.js` (Node), med én afhængighed: Postgres-driveren `postgres`.
+- **Database:** almindelig **PostgreSQL**. Skemaet ligger i `db/skema.sql`.
+- **Login:** indbygget. Adgangskoder gemmes med scrypt, og login holdes i en sikker cookie. Der er ingen ekstern login- eller mailtjeneste: administratorer laver personlige links til medlemmerne.
 
 | Side | Adgang |
 |---|---|
@@ -8,20 +12,29 @@ Det er en statisk side (HTML, CSS og JavaScript uden byggetrin) på **Netlify** 
 | Vagter, Beskeder | kræver login |
 | Administration | kun administratorer |
 
-Sikkerheden ligger i databasens regler (Row Level Security) i `supabase/migrations/`, ikke i browseren.
+Alle regler for, hvem der må hvad, ligger i `api/index.js` og testes af `tools/test.mjs`.
 
-## Sådan sættes siden i drift (ca. 30 minutter)
-1. **Supabase:** Opret et projekt på supabase.com (region EU, Frankfurt). Gå til SQL Editor, og kør de to filer i `supabase/migrations/` i rækkefølge.
-2. **Edge-funktion** (bruges til at invitere medlemmer): `npx supabase login`, derefter `npx supabase link --project-ref <ref>` og `npx supabase functions deploy medlemmer`.
-3. **Login-indstillinger** i Supabase under Authentication → Sign In / Providers: slå "Allow new users to sign up" FRA. Sæt URL Configuration → Site URL til `https://haderslevmarineforening.dk/log-ind/`, og tilføj `https://haderslevmarineforening.dk/**` som Redirect URL. Oversæt gerne e-mailskabelonerne (Invite, Magic Link, Reset Password) til dansk.
-4. **E-mail:** Supabase' indbyggede mailafsendelse er begrænset til få mails i timen. Opsæt gratis SMTP (fx Brevo) under Authentication → SMTP.
-5. Ret `assets/js/config.js` med projektets URL og anon/publishable-nøgle (Project Settings → API).
-6. **Netlify:** Læg mappen på GitHub, og opret et site i Netlify ud fra repoet (intet byggetrin). Tilføj domænet `haderslevmarineforening.dk`, og ret DNS hos One.com, så den peger på Netlify. Gamle adresser omdirigeres via `netlify.toml`.
-7. **Første administrator:** Inviter dig selv under Authentication → Users → Invite. Sæt derefter din rolle i SQL Editor: `update profiler set rolle='admin' where email='din@mail.dk';`. Resten klares fra siden Administration.
+## Drift på Vercel + Neon (gratis)
+1. Læg mappen på GitHub, og importer repositoriet på vercel.com (Add New → Project). Der er intet byggetrin.
+2. I Vercel-projektet: **Storage → Create Database → Neon (Postgres)**. Så sættes `DATABASE_URL` automatisk.
+3. Opret tabeller og første administrator fra din egen computer:
+   ```
+   DATABASE_URL="<værdien fra Vercel>" node tools/opret-admin.mjs din@mail.dk "Dit Navn" https://dit-domæne.dk
+   ```
+   Åbn linket, der skrives ud, og vælg en adgangskode. Resten klares fra siden Administration.
+4. Tilføj domænet `haderslevmarineforening.dk` under Settings → Domains, og ret DNS hos One.com. Gamle adresser omdirigeres via `vercel.json`.
 
-## Lokal udvikling og test
+## Uden Vercel
+Siden kører på enhver server med Node 18+ og PostgreSQL:
 ```
-npx supabase start          # kræver Docker
-python3 -m http.server 8080
-node tools/test-sikkerhed.mjs   # 38 test af adgangsregler
+npm install
+DATABASE_URL=postgres://... PORT=8080 node tools/server.mjs
+```
+
+## Lokal test
+```
+docker run -d --name hmf-pg -e POSTGRES_PASSWORD=test -e POSTGRES_DB=hmf -p 5432:5432 postgres:17-alpine
+export DATABASE_URL=postgres://postgres:test@localhost:5432/hmf NODE_ENV=development
+node tools/server.mjs &
+node tools/test.mjs     # sletter alt i den lokale database og tester API og rettigheder
 ```
