@@ -6,9 +6,11 @@ import { randomBytes, scrypt as _scrypt, timingSafeEqual, createHash } from "nod
 import { promisify } from "node:util";
 
 const scrypt = promisify(_scrypt);
-const sql = postgres(process.env.DATABASE_URL, {
+// Virker med det navn, Neon/Vercel giver forbindelsen, uanset hvilket præfiks der er valgt.
+const DB_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.env.POSTGRES_URL;
+const sql = postgres(DB_URL, {
   max: 3, idle_timeout: 20,
-  ssl: /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL || "") ? false : "require",
+  ssl: /localhost|127\.0\.0\.1/.test(DB_URL || "") ? false : "require",
 });
 
 const SESSION_DAGE = 60;
