@@ -1,5 +1,4 @@
 {
-  "trailingSlash": true,
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api?sti=$1" }],
   "redirects": [
     { "source": "/OmOs.html", "destination": "/om-os/", "permanent": true },

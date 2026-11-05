@@ -11,6 +11,7 @@ const DB_URL = process.env.DATABASE_URL || process.env.STORAGE_URL || process.en
 const sql = postgres(DB_URL, {
   max: 3, idle_timeout: 20,
   ssl: /localhost|127\.0\.0\.1/.test(DB_URL || "") ? false : "require",
+  prepare: !/-pooler\./.test(DB_URL || ""), // Neons pooler: ingen gemte forespørgsler
 });
 
 const SESSION_DAGE = 60;
