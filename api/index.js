@@ -4,6 +4,7 @@
 import postgres from "postgres";
 import { randomBytes, scrypt as _scrypt, timingSafeEqual, createHash } from "node:crypto";
 import { promisify } from "node:util";
+import { readFileSync } from "node:fs";
 
 const scrypt = promisify(_scrypt);
 // Virker med det navn, Neon/Vercel giver forbindelsen, uanset hvilket præfiks der er valgt.
@@ -85,6 +86,19 @@ async function nytLink(brugerId) {
 // ---------- Ruter ----------
 const ruter = [];
 const rute = (metode, moenster, fn) => ruter.push([metode, new RegExp("^/api" + moenster.replace(/:(\w+)/g, "(?<$1>\\d+)") + "/?$"), fn]);
+
+// Første opsætning: opretter tabeller og første administrator.
+// Kræver miljøvariablen OPSAETNING_KODE og virker kun, så længe der ikke findes en administrator.
+rute("POST", "/opsaet", async ({ req, body }) => {
+  const kode = process.env.OPSAETNING_KODE;
+  if (!kode || req.headers["x-opsaetning"] !== kode) throw new Fejl(404, "Ukendt adresse.");
+  await sql.unsafe(readFileSync(new URL("../db/skema.sql", import.meta.url), "utf8"));
+  const [findes] = await sql`select 1 from brugere where rolle = 'admin' limit 1`;
+  if (findes) throw new Fejl(409, "Der findes allerede en administrator.");
+  const email = tekst(body.email, 200, "e-mail", true).toLowerCase();
+  const [b] = await sql`insert into brugere (email, navn, rolle) values (${email}, ${tekst(body.navn, 80, "navn", true)}, 'admin') returning id`;
+  return { token: await nytLink(b.id) };
+});
 
 // Login
 rute("GET", "/mig", async ({ bruger }) => ({ bruger }));
