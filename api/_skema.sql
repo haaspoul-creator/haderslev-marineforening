@@ -96,3 +96,19 @@ create table if not exists forslag (
   opdateret timestamptz not null default now()
 );
 create index if not exists forslag_oprettet on forslag (oprettet desc);
+
+-- Tilmelding til arrangementer (alle kan tilmelde sig med navn og antal)
+alter table arrangementer add column if not exists tilmelding boolean not null default true;
+alter table arrangementer add column if not exists max_antal int check (max_antal is null or max_antal between 1 and 1000);
+create table if not exists arrangement_tilmeldinger (
+  id             bigint generated always as identity primary key,
+  arrangement_id bigint not null references arrangementer (id) on delete cascade,
+  navn           text not null check (char_length(btrim(navn)) between 1 and 80),
+  antal          int not null check (antal between 1 and 20),
+  bruger_id      bigint references brugere (id) on delete set null,  -- hvis man var logget ind
+  afmeld_hash    text not null,   -- hash af nøglen, som tilmelderens browser gemmer til afmelding
+  kilde_hash     text not null,   -- hash af IP + dato, kun til værn mod masseindsendelser
+  oprettet       timestamptz not null default now()
+);
+create index if not exists arr_tilm_arr on arrangement_tilmeldinger (arrangement_id);
+create index if not exists arr_tilm_kilde on arrangement_tilmeldinger (kilde_hash, oprettet);

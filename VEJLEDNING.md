@@ -6,6 +6,12 @@
 3. Glemt adgangskoden? Kontakt en fra bestyrelsen, så får du et nyt link.
 4. Tryk på dit navn øverst til højre (på mobil: i menuen) for Min profil, Forslag, Administration og Log ud. Under Min profil øverst kan du rette dit navn, skifte adgangskode og logge ud.
 
+## Tilmelding til arrangementer (alle)
+- Gå til **Arrangementskalender** (eller tryk **Tilmeld dig** ved næste arrangement på forsiden), og tryk **Tilmeld**.
+- Skriv dit navn og antal personer (dig selv og evt. gæster, 1–20), og tryk **Tilmeld**. Du behøver ikke at logge ind.
+- Ud for hvert arrangement står, hvor mange der er tilmeldt (og hvor mange pladser der er, hvis der er en grænse).
+- Vil du afmelde dig, så tryk **Afmeld** ved din tilmelding. Det virker fra samme telefon/computer, som du tilmeldte dig fra – eller hvor som helst, hvis du var logget ind. Ellers kontakt bestyrelsen.
+
 ## Vagter (medlemmer)
 - Gå til **Vagter**. Sæt flueben i **Jeg tager vagten** for at tage en vagt. Fjern fluebenet for at afmelde dig.
 - Dine vagter er fremhævet og mærket **Din vagt**. Står der **Fuld**, er alle pladser taget.
@@ -21,7 +27,9 @@
 ## For administratorer
 **Forslag:** Gå til **Forslag** (link under Administration). Sæt status (Ny, I gang, Udført, Ikke aktuelt), skriv evt. et kort svar og tryk **Gem**. Medlemmet ser svaret med det samme.
 
-**Tilføj arrangement:** Gå til **Arrangementskalender** → tryk **Tilføj arrangement** → udfyld titel og dato (tid, sted og beskrivelse er valgfrit) → **Tilføj til kalenderen**. Arrangementet vises straks, også på forsiden som "Næste arrangement". Har du skrevet forkert, så tryk **Ret** ud for arrangementet, ret felterne og tryk **Gem ændringer** (eller **Annuller**). Slet med **Slet** (to tryk).
+**Tilføj arrangement:** Gå til **Arrangementskalender** → tryk **Tilføj arrangement** → udfyld titel og dato (tid, sted og beskrivelse er valgfrit). Vælg om der skal være **tilmelding med navn og antal** (slået til som standard), og skriv evt. et **maks. antal personer** → **Tilføj til kalenderen**.
+
+**Deltagerliste:** Tryk **Deltagerliste** ud for et arrangement for at se navne, antal og i alt. Herfra kan du **kopiere** eller **udskrive** listen og fjerne en tilmelding med **×**. Kun administratorer kan se navnene – andre ser kun antallet. Arrangementet vises straks, også på forsiden som "Næste arrangement". Har du skrevet forkert, så tryk **Ret** ud for arrangementet, ret felterne og tryk **Gem ændringer** (eller **Annuller**). Slet med **Slet** (to tryk).
 
 **Tilføj vagt:** Gå til **Vagter** → **Tilføj vagt** → udfyld vagt, dato og **antal pladser** → **Tilføj vagt**. Ret en vagt med **Ret** (antal pladser kan ikke sættes lavere end antallet af tilmeldte). Skal en person fjernes fra en vagt, så tryk **×** ved navnet (to tryk). Hvis du sletter en vagt, slettes tilmeldingerne også.
 

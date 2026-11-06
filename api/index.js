@@ -178,22 +178,82 @@ rute("POST", "/mig/kode", async ({ req, bruger, body }) => {
 });
 
 // Arrangementer (offentlige)
-rute("GET", "/arrangementer", async () => sql`
-  select id, titel, dato::text, to_char(tid, 'HH24:MI') tid, sted, beskrivelse from arrangementer
-  where dato >= current_date order by dato, tid nulls first`);
+const ja = (v) => v === true || v === "on" || v === "1" || v === "true";
+const maksTal = (v) => {
+  if (v === undefined || v === null || v === "") return null;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 1 || n > 1000) throw new Fejl(400, "Maks. antal skal være et helt tal mellem 1 og 1000 (eller tomt).");
+  return n;
+};
+rute("GET", "/arrangementer", async ({ bruger }) => sql`
+  select a.id, a.titel, a.dato::text, to_char(a.tid, 'HH24:MI') tid, a.sted, a.beskrivelse, a.tilmelding, a.max_antal,
+    coalesce(sum(t.antal), 0)::int tilmeldt, count(t.id)::int tilmeldinger,
+    coalesce(json_agg(json_build_object('id', t.id, 'navn', t.navn, 'antal', t.antal))
+      filter (where ${bruger ? bruger.id : null}::bigint is not null and t.bruger_id = ${bruger ? bruger.id : null}::bigint), '[]') mine
+  from arrangementer a left join arrangement_tilmeldinger t on t.arrangement_id = a.id
+  where a.dato >= current_date group by a.id order by a.dato, a.tid nulls first`);
 rute("POST", "/arrangementer", async ({ bruger, body }) => {
   kraevAdmin(bruger);
-  const [a] = await sql`insert into arrangementer (titel, dato, tid, sted, beskrivelse) values (
-    ${tekst(body.titel, 120, "titel", true)}, ${dato(body.dato)}, ${tid(body.tid)}, ${tekst(body.sted, 120, "sted")}, ${tekst(body.beskrivelse, 1000, "beskrivelse")})
+  const [a] = await sql`insert into arrangementer (titel, dato, tid, sted, beskrivelse, tilmelding, max_antal) values (
+    ${tekst(body.titel, 120, "titel", true)}, ${dato(body.dato)}, ${tid(body.tid)}, ${tekst(body.sted, 120, "sted")}, ${tekst(body.beskrivelse, 1000, "beskrivelse")},
+    ${ja(body.tilmelding)}, ${maksTal(body.max_antal)})
     returning id`;
   return a;
 });
 rute("PATCH", "/arrangementer/:id", async ({ bruger, body, p }) => {
   kraevAdmin(bruger);
+  const maks = maksTal(body.max_antal);
+  if (maks) {
+    const [{ sum }] = await sql`select coalesce(sum(antal), 0)::int sum from arrangement_tilmeldinger where arrangement_id = ${p.id}`;
+    if (maks < sum) throw new Fejl(400, `Der er allerede ${sum} tilmeldt. Maks. antal skal være mindst ${sum}.`);
+  }
   const r = await sql`update arrangementer set titel = ${tekst(body.titel, 120, "titel", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
-    sted = ${tekst(body.sted, 120, "sted")}, beskrivelse = ${tekst(body.beskrivelse, 1000, "beskrivelse")} where id = ${p.id}`;
+    sted = ${tekst(body.sted, 120, "sted")}, beskrivelse = ${tekst(body.beskrivelse, 1000, "beskrivelse")},
+    tilmelding = ${ja(body.tilmelding)}, max_antal = ${maks} where id = ${p.id}`;
   if (!r.count) throw new Fejl(404, "Arrangementet findes ikke længere.");
   return { ok: true };
+});
+
+// Tilmelding til arrangementer – åben for alle, også uden login.
+const kilde = (req) => hash(String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").split(",")[0].trim() + "|" + new Date().toISOString().slice(0, 10));
+rute("POST", "/arrangementer/:id/tilmeld", async ({ req, bruger, body, p }) => {
+  if (body.hjemmeside) throw new Fejl(400, "Tilmeldingen blev afvist."); // skjult felt – udfyldes kun af robotter
+  const navn = tekst(body.navn, 80, "dit navn", true);
+  const antal = Number(body.antal);
+  if (!Number.isInteger(antal) || antal < 1 || antal > 20) throw new Fejl(400, "Antal personer skal være mellem 1 og 20.");
+  const k = kilde(req);
+  const [{ seneste }] = await sql`select count(*)::int seneste from arrangement_tilmeldinger where kilde_hash = ${k} and oprettet > now() - interval '1 hour'`;
+  if (seneste >= 15) throw new Fejl(429, "Der er kommet mange tilmeldinger herfra. Prøv igen om lidt, eller kontakt bestyrelsen.");
+  const token = nyToken();
+  const ny = await sql.begin(async (tx) => {
+    const [a] = await tx`select titel, tilmelding, max_antal, dato >= current_date aktuel from arrangementer where id = ${p.id} for update`;
+    if (!a) throw new Fejl(404, "Arrangementet findes ikke længere.");
+    if (!a.aktuel) throw new Fejl(400, "Arrangementet er overstået.");
+    if (!a.tilmelding) throw new Fejl(400, "Der er ikke tilmelding til dette arrangement.");
+    const [{ sum, antalT }] = await tx`select coalesce(sum(antal), 0)::int sum, count(*)::int "antalT" from arrangement_tilmeldinger where arrangement_id = ${p.id}`;
+    if (antalT >= 500) throw new Fejl(409, "Der kan ikke komme flere tilmeldinger. Kontakt bestyrelsen.");
+    if (a.max_antal && sum + antal > a.max_antal) {
+      const ledige = a.max_antal - sum;
+      throw new Fejl(409, ledige > 0 ? `Der er kun ${ledige} ${ledige === 1 ? "plads" : "pladser"} tilbage.` : "Arrangementet er desværre fuldt booket.");
+    }
+    const [t] = await tx`insert into arrangement_tilmeldinger (arrangement_id, navn, antal, bruger_id, afmeld_hash, kilde_hash)
+      values (${p.id}, ${navn}, ${antal}, ${bruger ? bruger.id : null}, ${hash(token)}, ${k}) returning id`;
+    return t;
+  });
+  return { id: ny.id, token };
+});
+rute("DELETE", "/arrangementer/:id/tilmeldinger/:tid", async ({ bruger, body, p }) => {
+  const token = String(body.token || "");
+  const r = await sql`delete from arrangement_tilmeldinger where id = ${p.tid} and arrangement_id = ${p.id} and (
+    ${bruger?.rolle === "admin"} or (${bruger ? bruger.id : null}::bigint is not null and bruger_id = ${bruger ? bruger.id : null}::bigint)
+    or (${token} <> '' and afmeld_hash = ${hash(token)}))`;
+  if (!r.count) throw new Fejl(403, "Tilmeldingen kunne ikke findes, eller du kan ikke afmelde den.");
+  return { ok: true };
+});
+rute("GET", "/arrangementer/:id/tilmeldinger", async ({ bruger, p }) => {
+  kraevAdmin(bruger);
+  return sql`select id, navn, antal, oprettet, bruger_id is not null medlem from arrangement_tilmeldinger
+    where arrangement_id = ${p.id} order by oprettet`;
 });
 rute("DELETE", "/arrangementer/:id", async ({ bruger, p }) => { kraevAdmin(bruger); await sql`delete from arrangementer where id = ${p.id}`; return { ok: true }; });
 

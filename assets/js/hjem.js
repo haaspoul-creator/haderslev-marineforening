@@ -19,7 +19,11 @@ import { pdfIkon } from "./ikoner.js";
     h("div", {},
       h("h3", {}, a.titel),
       h("p", { style: "margin:0" }, fmtDag(a.dato).replace(/^./, (c) => c.toUpperCase()) + (a.tid ? " kl. " + fmtTid(a.tid) : "")),
-      a.sted ? h("p", { class: "muted", style: "margin:0" }, a.sted) : null)));
+      a.sted ? h("p", { class: "muted", style: "margin:0" }, a.sted) : null,
+      a.tilmelding ? h("p", { style: "margin:10px 0 0;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center" },
+        h("span", {}, h("b", {}, a.max_antal ? `${a.tilmeldt} / ${a.max_antal}` : a.tilmeldt), " tilmeldt"),
+        a.max_antal && a.tilmeldt >= a.max_antal ? h("span", { class: "fuld" }, "Fuldt booket")
+          : h("a", { class: "btn sm orange", href: `/arrangementskalender/?tilmeld=${a.id}` }, "Tilmeld dig")) : null)));
 })();
 
 (async () => {

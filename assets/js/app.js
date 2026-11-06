@@ -184,7 +184,11 @@ export function redigerbarForm({ form, boks, overskrift, knaptekst, gem }) {
   return {
     ret(raekke) {
       id = raekke.id;
-      for (const [k, v] of Object.entries(raekke)) if (form.elements[k] && form.elements[k].type !== "file") form.elements[k].value = v ?? "";
+      for (const [k, v] of Object.entries(raekke)) {
+        const el = form.elements[k];
+        if (!el || el.type === "file") continue;
+        if (el.type === "checkbox") el.checked = !!v; else el.value = v ?? "";
+      }
       summary.textContent = `Ret "${raekke.titel}"`; knap.textContent = "Gem ændringer"; annuller.hidden = false;
       boks.open = true;
       boks.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });

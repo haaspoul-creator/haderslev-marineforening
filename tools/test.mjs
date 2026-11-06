@@ -163,6 +163,51 @@ tjek("PDF sendes i sandkasse", (pdfR.headers.get("content-security-policy") || "
 for (let i = 0; i < 30; i++) await dora0.k("/beskeder", "POST", { tekst: "spam " + i });
 tjek("max 30 beskeder i timen", (await dora0.k("/beskeder", "POST", { tekst: "en til" })).status === 429);
 
+// Tilmelding til arrangementer
+const ar = (await admin("/arrangementer", "POST", { titel: "Julefrokost", dato: "2030-12-05", tid: "18:00", tilmelding: true, max_antal: 10 })).data;
+const gaest = klient();
+const tg = await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Gæst Hansen", antal: 3 });
+tjek("anonym kan tilmelde sig med navn og antal", ok(tg) && !!tg.data.token);
+const tb = await bent.k(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Bent og fru", antal: 2 });
+tjek("medlem kan tilmelde sig", ok(tb));
+let arr = (await anon("/arrangementer")).data.find((a) => a.id === ar.id);
+tjek("optælling: 5 tilmeldt, 2 tilmeldinger", arr.tilmeldt === 5 && arr.tilmeldinger === 2 && arr.max_antal === 10);
+tjek("anonym ser IKKE navne", JSON.stringify(arr).indexOf("Hansen") === -1 && arr.mine.length === 0);
+tjek("medlem ser sin egen tilmelding", (await bent.k("/arrangementer")).data.find((a) => a.id === ar.id).mine[0]?.navn === "Bent og fru");
+tjek("anonym kan IKKE se deltagerlisten", (await anon(`/arrangementer/${ar.id}/tilmeldinger`)).status === 401);
+tjek("medlem kan IKKE se deltagerlisten", (await bent.k(`/arrangementer/${ar.id}/tilmeldinger`)).status === 403);
+const dl = (await admin(`/arrangementer/${ar.id}/tilmeldinger`)).data;
+tjek("admin ser deltagerlisten med navn og antal", dl.length === 2 && dl[0].navn === "Gæst Hansen" && dl[0].antal === 3);
+const forMange = await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Stor familie", antal: 6 });
+tjek("over max afvises: " + forMange.data.fejl, forMange.status === 409 && /5 pladser/.test(forMange.data.fejl));
+tjek("antal 0 afvises", (await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "X", antal: 0 })).status === 400);
+tjek("antal 21 afvises", (await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "X", antal: 21 })).status === 400);
+tjek("tomt navn afvises", (await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "  ", antal: 1 })).status === 400);
+tjek("robot-felt afvises", (await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Bot", antal: 1, hjemmeside: "http://spam" })).status === 400);
+const samt = await Promise.all([1, 2, 3].map(() => klient()(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Samtidig", antal: 2 })));
+arr = (await anon("/arrangementer")).data.find((a) => a.id === ar.id);
+tjek(`samtidige tilmeldinger overbooker ikke (${arr.tilmeldt}/10)`, arr.tilmeldt <= 10 && samt.filter(ok).length === 2);
+tjek("sidste plads kan tages", ok(await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Sidste", antal: 10 - arr.tilmeldt })));
+const fb = await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "Sen", antal: 1 });
+tjek("fuldt booket afvises: " + fb.data.fejl, fb.status === 409 && /fuldt booket/.test(fb.data.fejl));
+tjek("forkert nøgle kan IKKE afmelde", (await klient()(`/arrangementer/${ar.id}/tilmeldinger/${tg.data.id}`, "DELETE", { token: "forkert" })).status === 403);
+tjek("andet medlem kan IKKE afmelde Bent", (await carlFoer.k(`/arrangementer/${ar.id}/tilmeldinger/${tb.data.id}`, "DELETE", {})).status === 403);
+tjek("gæst kan afmelde med sin nøgle", ok(await klient()(`/arrangementer/${ar.id}/tilmeldinger/${tg.data.id}`, "DELETE", { token: tg.data.token })));
+tjek("medlem kan afmelde via sin konto", ok(await bent.k(`/arrangementer/${ar.id}/tilmeldinger/${tb.data.id}`, "DELETE", {})));
+const rest = (await admin(`/arrangementer/${ar.id}/tilmeldinger`)).data;
+tjek("admin kan fjerne en tilmelding", ok(await admin(`/arrangementer/${ar.id}/tilmeldinger/${rest[0].id}`, "DELETE")));
+tjek("max kan ikke sættes under antal tilmeldte", (await admin("/arrangementer/" + ar.id, "PATCH", { titel: "Julefrokost", dato: "2030-12-05", tilmelding: true, max_antal: 1 })).status === 400);
+tjek("admin slår tilmelding fra", ok(await admin("/arrangementer/" + ar.id, "PATCH", { titel: "Julefrokost", dato: "2030-12-05", tilmelding: false, max_antal: "" })));
+tjek("ingen tilmelding når slået fra", (await gaest(`/arrangementer/${ar.id}/tilmeld`, "POST", { navn: "X", antal: 1 })).status === 400);
+const masse = klient(); let sidst;
+const ar2 = (await admin("/arrangementer", "POST", { titel: "Åbent hus", dato: "2030-12-06", tilmelding: true })).data;
+for (let i = 0; i < 16; i++) sidst = await masse(`/arrangementer/${ar2.id}/tilmeld`, "POST", { navn: "Masse " + i, antal: 1 });
+tjek("masseindsendelse fra samme sted bremses", sidst.status === 429);
+await sql`delete from arrangement_tilmeldinger`;
+await sql`insert into arrangementer (titel, dato, tilmelding) values ('Gammel fest', '2020-01-01', true)`;
+const [gf] = await sql`select id from arrangementer where titel = 'Gammel fest'`;
+tjek("kan IKKE tilmelde sig overstået arrangement", (await gaest(`/arrangementer/${gf.id}/tilmeld`, "POST", { navn: "X", antal: 1 })).status === 400);
+
 // Forslag
 const carl = await medlem("Carl Carlsen", "carl@test.dk");
 const dora = await medlem("Dora Dam", "dora@test.dk", "laeser");

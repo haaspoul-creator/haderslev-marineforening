@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Arrangementskalender – Haderslev Marineforening</title>
-<meta name="description" content="Kommende arrangementer i Haderslev Marineforening i Det Maritime Hus, Ved Havnen 18, Haderslev: ulkeaftener, fællesspisning, julefrokost og meget mere.">
+<meta name="description" content="Kommende arrangementer og tilmelding i Haderslev Marineforening i Det Maritime Hus, Ved Havnen 18, Haderslev: ulkeaftener, fællesspisning, julefrokost og meget mere.">
 <link rel="canonical" href="https://haderslevmarineforening.dk/arrangementskalender/">
 <meta name="theme-color" content="#f28c28">
 <link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
@@ -37,7 +37,7 @@
 <main id="indhold-start">
   <div class="sidehoved">
     <h1>Arrangementskalender</h1>
-    <p>Foreningens kommende arrangementer. Marinestuen er desuden åben for hyggeligt samvær alle normale lørdage kl. 10–13.</p>
+    <p>Foreningens kommende arrangementer. Tryk <b>Tilmeld</b> for at melde dig og eventuelle gæster til – du behøver ikke at logge ind. Marinestuen er desuden åben for hyggeligt samvær alle normale lørdage kl. 10–13.</p>
   </div>
 
   <div id="status" class="note status" hidden></div>
@@ -53,6 +53,11 @@
       </div>
       <label for="a-beskrivelse">Kort beskrivelse <span class="muted">(valgfrit)</span></label>
       <input id="a-beskrivelse" name="beskrivelse" maxlength="1000">
+      <div class="felter-form">
+        <div><label class="flueben" style="margin-top:14px"><input type="checkbox" name="tilmelding" id="a-tilmelding" checked> Tilmelding med navn og antal</label></div>
+        <div><label for="a-max">Maks. antal personer <span class="muted">(valgfrit)</span></label><input id="a-max" name="max_antal" type="number" min="1" max="1000" inputmode="numeric" aria-describedby="a-max-hjaelp"></div>
+      </div>
+      <p class="hjaelp" id="a-max-hjaelp">Lad feltet stå tomt, hvis der ikke er en grænse.</p>
       <div class="form-handling"><button class="btn" type="submit">Tilføj til kalenderen</button></div>
     </form>
   </details>
