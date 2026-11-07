@@ -63,7 +63,7 @@ function nulstilUpload() {
 
 filer.addEventListener("change", () => {
   fejlEl.hidden = true;
-  const nye = [...filer.files].filter((f) => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
+  const nye = [...filer.files].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.name));
   if (valgte.length + nye.length > 20) { fejlEl.textContent = "Du kan højst lægge 20 billeder ind ad gangen."; fejlEl.hidden = false; }
   for (const fil of nye.slice(0, 20 - valgte.length)) {
     const url = URL.createObjectURL(fil);
