@@ -25,7 +25,7 @@
 
 ## Slopkisten (medlemmer)
 - Gå til **Slopkisten**. Find varen via kategorierne eller ved at søge på navn eller varenummer (fx C121050).
-- Vælg størrelse/variant og antal, og tryk **Læg i kurv**. Skriv evt. telefon og en bemærkning (fx broderi), og tryk **Send bestilling**.
+- Vælg størrelse/variant og antal, og tryk **Læg i kurv**. Udfyld **navn, e-mail og telefon** (skal udfyldes – navn og e-mail er sat ind fra din konto) og evt. en bemærkning (fx broderi), og tryk **Send bestilling**.
 - Slopbestyreren kontakter dig om pris, betaling og udlevering. Under **Mine bestillinger** kan du følge status, og du kan annullere, så længe bestillingen står som **Ny**.
 
 ## Beskeder (medlemmer)

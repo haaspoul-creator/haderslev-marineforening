@@ -629,3 +629,5 @@ table.tabel.linjer { min-width: 0; font-size: 15px; margin-top: 10px; }
   .menu-knap { padding: 6px 10px; gap: 6px; }
 }
 @media (min-width: 1001px) { .felter { grid-template-columns: repeat(6, 1fr); gap: 14px; } .felt { padding: 18px 16px 38px; } .felt b { font-size: clamp(17px, 1.45vw, 20px); } }
+.kraevet { color: var(--fejl); font-weight: 700; }
+input[aria-invalid="true"] { border-color: var(--fejl); }

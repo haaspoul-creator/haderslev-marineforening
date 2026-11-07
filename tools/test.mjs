@@ -248,7 +248,7 @@ tjek("tom kurv afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: 
 tjek("ukendt vare afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "findes-ikke", variant: 0, antal: 1 }] })).status === 400);
 tjek("ukendt variant afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: 99, antal: 1 }] })).status === 400);
 tjek("antal 0 afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 0 }] })).status === 400);
-const best = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 2 }, { vare: "slips", variant: 0, antal: 1 }], telefon: "12 34 56 78", bemaerkning: "Med afdelingsnavn" });
+const best = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 2 }, { vare: "slips", variant: 0, antal: 1 }], navn: "Slop Sven", email: "sven@test.dk", telefon: "12 34 56 78", bemaerkning: "Med afdelingsnavn" });
 tjek("medlem kan bestille", ok(best) && !!best.data.id);
 const mineB = (await slopM.k("/slopkisten/bestillinger")).data;
 tjek("medlem ser sin bestilling med varenr fra kataloget", mineB.length === 1 && mineB[0].linjer[0].varenr === "C121050" && mineB[0].linjer[0].variant === "Medium" && mineB[0].linjer[0].antal === 2);
@@ -259,7 +259,13 @@ tjek("medlem kan IKKE ændre status til udleveret", (await slopM.k(`/slopkisten/
 tjek("andet medlem kan IKKE annullere", (await carlFoer.k(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "annulleret" })).status === 403);
 tjek("admin sætter status 'bestilt'", ok(await admin(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "bestilt" })));
 tjek("medlem kan IKKE annullere, når den er bestilt", (await slopM.k(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "annulleret" })).status === 403);
-const best2 = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }] });
+const KONTAKT = { navn: "Slop Sven", email: "sven@test.dk", telefon: "12345678" };
+const udenTlf = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }], navn: "Slop Sven", email: "sven@test.dk" });
+tjek("bestilling uden telefon afvises: " + udenTlf.data.fejl, udenTlf.status === 400 && /telefon/.test(udenTlf.data.fejl));
+tjek("bestilling uden navn afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }], ...KONTAKT, navn: " " })).status === 400);
+tjek("bestilling med ugyldig e-mail afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }], ...KONTAKT, email: "ikke-en-mail" })).status === 400);
+tjek("for kort telefonnummer afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }], ...KONTAKT, telefon: "1234" })).status === 400);
+const best2 = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }], ...KONTAKT });
 tjek("medlem kan annullere en ny bestilling", ok(await slopM.k(`/slopkisten/bestillinger/${best2.data.id}`, "PATCH", { status: "annulleret" })));
 tjek("medlem kan IKKE slette bestillinger", (await slopM.k(`/slopkisten/bestillinger/${best2.data.id}`, "DELETE")).status === 403);
 tjek("admin kan slette en bestilling", ok(await admin(`/slopkisten/bestillinger/${best2.data.id}`, "DELETE")));

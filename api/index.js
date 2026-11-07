@@ -523,13 +523,19 @@ rute("POST", "/slopkisten/bestil", async ({ bruger, body }) => {
     if (!Number.isInteger(antal) || antal < 1 || antal > 50) throw new Fejl(400, "Antal skal være mellem 1 og 50.");
     return { vare_id: v.id, varenr: variant.varenr, titel: v.titel, variant: variant.tekst, antal };
   });
-  const telefon = tekst(body.telefon, 30, "telefonnummeret");
+  // Navn, e-mail og telefon skal altid opgives, så slopbestyreren kan kontakte den, der har bestilt.
+  const navn = tekst(body.navn, 80, "dit navn", true);
+  const email = tekst(body.email, 200, "din e-mail", true).toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Fejl(400, "Skriv en gyldig e-mail.");
+  const telefon = tekst(body.telefon, 30, "dit telefonnummer", true);
+  const cifre = telefon.replace(/[\s+()-]/g, "");
+  if (!/^\d{8,15}$/.test(cifre)) throw new Fejl(400, "Skriv et gyldigt telefonnummer (mindst 8 cifre).");
   const bemaerkning = tekst(body.bemaerkning, 1000, "bemærkningen");
   const [{ antal }] = await sql`select count(*)::int antal from slop_bestillinger where bruger_id = ${bruger.id} and oprettet > now() - interval '1 day'`;
   if (antal >= 10) throw new Fejl(429, "Du har sendt mange bestillinger i dag. Kontakt slopbestyreren.");
   const id = await sql.begin(async (tx) => {
     const [b] = await tx`insert into slop_bestillinger (bruger_id, navn, email, telefon, bemaerkning)
-      values (${bruger.id}, ${bruger.navn}, ${bruger.email}, ${telefon}, ${bemaerkning}) returning id`;
+      values (${bruger.id}, ${navn}, ${email}, ${telefon}, ${bemaerkning}) returning id`;
     for (const l of rene) await tx`insert into slop_linjer (bestilling_id, vare_id, varenr, titel, variant, antal)
       values (${b.id}, ${l.vare_id}, ${l.varenr}, ${l.titel}, ${l.variant}, ${l.antal})`;
     return b.id;

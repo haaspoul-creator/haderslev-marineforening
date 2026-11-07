@@ -47,29 +47,42 @@ function visKurv() {
       antal,
       h("button", { class: "fjern-knap", type: "button", "aria-label": `Fjern ${v.titel} fra bestillingen`, onclick: () => gemKurv(laesKurv().filter((y) => !(y.vare === l.vare && y.variant === l.variant))) }, "×")));
   });
+  const TLF = "hmf_slop_telefon";
+  let gemtTlf = ""; try { gemtTlf = localStorage.getItem(TLF) || ""; } catch { /* privat vindue */ }
+  const felt = (id, navn, label, attrs) => [h("label", { for: id }, label, h("span", { class: "kraevet", "aria-hidden": "true" }, " *")),
+    h("input", { id, name: navn, required: true, "aria-required": "true", ...attrs })];
   const form = h("form", { class: "kurv-form", novalidate: true },
-    h("label", { for: "k-tlf" }, "Telefon ", h("span", { class: "muted" }, "(så slopbestyreren kan ringe)")),
-    h("input", { id: "k-tlf", name: "telefon", type: "tel", autocomplete: "tel", maxlength: "30" }),
+    h("p", { class: "muted lille", style: "margin:12px 0 0" }, "Felter med * skal udfyldes, så slopbestyreren kan kontakte dig."),
+    ...felt("k-navn", "navn", "Navn", { autocomplete: "name", maxlength: "80", value: mig.navn || "" }),
+    ...felt("k-email", "email", "E-mail", { type: "email", autocomplete: "email", maxlength: "200", value: mig.email || "" }),
+    ...felt("k-tlf", "telefon", "Telefon", { type: "tel", autocomplete: "tel", maxlength: "30", inputmode: "tel", value: gemtTlf }),
     h("label", { for: "k-bem" }, "Bemærkning ", h("span", { class: "muted" }, "(valgfri)")),
     h("textarea", { id: "k-bem", name: "bemaerkning", rows: "2", maxlength: "1000", placeholder: "Fx broderi med afdelingsnavn" }),
-    h("p", { class: "muted lille" }, `Bestilles af ${mig.navn} (${mig.email})`),
+    h("p", { class: "note fejl", id: "k-fejl", role: "alert", hidden: true }),
     h("div", { class: "form-handling" }, h("button", { class: "btn", type: "submit" }, "Send bestilling"),
       h("button", { class: "btn alt sm", type: "button", onclick: () => gemKurv([]) }, "Tøm")));
+  form.addEventListener("input", (e) => { form.querySelector("#k-fejl").hidden = true; e.target.removeAttribute("aria-invalid"); });
   form.addEventListener("submit", sendBestilling);
   el.append(ul, form);
 }
 
 async function sendBestilling(e) {
   e.preventDefault();
-  const f = e.target, knap = f.querySelector("button[type=submit]");
+  const f = e.target, knap = f.querySelector("button[type=submit]"), fejl = f.querySelector("#k-fejl");
+  const vis = (felt, tekst) => { fejl.textContent = tekst; fejl.hidden = false; felt.setAttribute("aria-invalid", "true"); felt.focus(); };
+  const navn = f.navn.value.trim(), email = f.email.value.trim(), telefon = f.telefon.value.trim();
+  if (!navn) return vis(f.navn, "Skriv dit navn.");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return vis(f.email, "Skriv en gyldig e-mail.");
+  if (!/^\d{8,15}$/.test(telefon.replace(/[\s+()-]/g, ""))) return vis(f.telefon, "Skriv dit telefonnummer (mindst 8 cifre).");
   knap.disabled = true;
   try {
-    const r = await api("/slopkisten/bestil", { metode: "POST", data: { linjer: laesKurv(), telefon: f.telefon.value, bemaerkning: f.bemaerkning.value } });
+    const r = await api("/slopkisten/bestil", { metode: "POST", data: { linjer: laesKurv(), navn, email, telefon, bemaerkning: f.bemaerkning.value } });
+    try { localStorage.setItem("hmf_slop_telefon", telefon); } catch { /* privat vindue */ }
     gemKurv([]);
-    visStatus(status, `Tak! Din bestilling nr. ${r.id} er sendt til slopbestyreren, som kontakter dig om pris og udlevering.`, "ok");
+    visStatus(status, `Tak, ${navn}! Din bestilling nr. ${r.id} er sendt til slopbestyreren, som kontakter dig på ${telefon} eller ${email} om pris og udlevering.`, "ok");
     hentMine();
     if (erAdmin(mig)) hentAlle();
-  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); knap.disabled = false; }
+  } catch (err) { fejl.textContent = fejlTekst(err); fejl.hidden = false; knap.disabled = false; }
 }
 
 // ---------- Varer ----------
