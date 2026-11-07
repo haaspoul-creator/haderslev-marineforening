@@ -1,0 +1,872 @@
+{
+ "kilde": "https://www.marineforeningen.dk/slopkisten/",
+ "hentet": "2026-11-07",
+ "varer": [
+  {
+   "id": "blazeremblem",
+   "kategori": "Emblemer og tegn",
+   "titel": "Blazeremblem",
+   "noter": [],
+   "billede": "/assets/img/slop/blazeremblem.jpg",
+   "varianter": [
+    {
+     "varenr": "D010000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/blazeremblem/"
+  },
+  {
+   "id": "blazerknapper",
+   "kategori": "Emblemer og tegn",
+   "titel": "Blazerknapper",
+   "noter": [],
+   "billede": "/assets/img/slop/blazerknapper.jpg",
+   "varianter": [
+    {
+     "varenr": "D040015",
+     "tekst": "1 stk. 15 mm"
+    },
+    {
+     "varenr": "D040020",
+     "tekst": "1 stk. 20 mm"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/blazerknapper/"
+  },
+  {
+   "id": "damenaal-broche",
+   "kategori": "Emblemer og tegn",
+   "titel": "Damenål – broche",
+   "noter": [],
+   "billede": "/assets/img/slop/damenaal-broche.jpg",
+   "varianter": [
+    {
+     "varenr": "F090000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/damenaal-broche/"
+  },
+  {
+   "id": "hueemblem",
+   "kategori": "Emblemer og tegn",
+   "titel": "Hueemblem",
+   "noter": [],
+   "billede": "/assets/img/slop/hueemblem.jpg",
+   "varianter": [
+    {
+     "varenr": "D020000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/hueemblem/"
+  },
+  {
+   "id": "kendingstegn",
+   "kategori": "Emblemer og tegn",
+   "titel": "Kendingstegn",
+   "noter": [],
+   "billede": "/assets/img/slop/kendingstegn.jpg",
+   "varianter": [
+    {
+     "varenr": "A050000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/kendingstegn/"
+  },
+  {
+   "id": "medlemsemblem-m-oeje-til-halskaede",
+   "kategori": "Emblemer og tegn",
+   "titel": "Medlemsemblem m/øje til halskæde",
+   "noter": [
+    "(Uden kæde og tværgående øje)"
+   ],
+   "billede": "/assets/img/slop/medlemsemblem-m-oeje-til-halskaede.jpg",
+   "varianter": [
+    {
+     "varenr": "B010000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/medlemsemblem-m-oeje-til-halskaede/"
+  },
+  {
+   "id": "miniemblem",
+   "kategori": "Emblemer og tegn",
+   "titel": "Miniemblem",
+   "noter": [],
+   "billede": "/assets/img/slop/miniemblem.jpg",
+   "varianter": [
+    {
+     "varenr": "A040000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/miniemblem/"
+  },
+  {
+   "id": "skuldermaerker-2-stk",
+   "kategori": "Emblemer og tegn",
+   "titel": "Skuldermærker, 2 stk.",
+   "noter": [],
+   "billede": "/assets/img/slop/skuldermaerker-2-stk.jpg",
+   "varianter": [
+    {
+     "varenr": "D070000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/skuldermaerker-2-stk/"
+  },
+  {
+   "id": "vedhaeng-kendingstegn",
+   "kategori": "Emblemer og tegn",
+   "titel": "Vedhæng – kendingstegn",
+   "noter": [],
+   "billede": "/assets/img/slop/vedhaeng-kendingstegn.jpg",
+   "varianter": [
+    {
+     "varenr": "F100000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/emblemer-og-tegn/vedhaeng-kendingstegn/"
+  },
+  {
+   "id": "bordflag",
+   "kategori": "Flag og vimpler",
+   "titel": "Bordflag",
+   "noter": [],
+   "billede": "/assets/img/slop/bordflag.jpg",
+   "varianter": [
+    {
+     "varenr": "H030000",
+     "tekst": "Bordflag"
+    },
+    {
+     "varenr": "H030100",
+     "tekst": "Flagstang t. bordflag"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/flag-og-vimpler/bordflag/"
+  },
+  {
+   "id": "vimpel-250-cm",
+   "kategori": "Flag og vimpler",
+   "titel": "Vimpel, 250 cm",
+   "noter": [],
+   "billede": "/assets/img/slop/vimpel-250-cm.jpg",
+   "varianter": [
+    {
+     "varenr": "C050000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/flag-og-vimpler/vimpel-250-cm/"
+  },
+  {
+   "id": "vimpel-44-cm",
+   "kategori": "Flag og vimpler",
+   "titel": "Vimpel, 44 cm",
+   "noter": [],
+   "billede": "/assets/img/slop/vimpel-44-cm.jpg",
+   "varianter": [
+    {
+     "varenr": "H050100",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/flag-og-vimpler/vimpel-44-cm/"
+  },
+  {
+   "id": "softshell-jakke-herre-dame-model-kan-endnu-ikke-bestilles",
+   "kategori": "Overtøj",
+   "titel": "Softshell jakke – herre model",
+   "noter": [
+    "Udgår – kan bestilles, så længe lager haves.",
+    "Fås med tryk (som vist) eller broderi:"
+   ],
+   "billede": "/assets/img/slop/softshell-jakke-herre-dame-model-kan-endnu-ikke-bestilles.jpg",
+   "varianter": [
+    {
+     "varenr": "C270050",
+     "tekst": "50/Medium"
+    },
+    {
+     "varenr": "C270052",
+     "tekst": "52/Large"
+    },
+    {
+     "varenr": "C270054",
+     "tekst": "54/X-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/overtoej/softshell-jakke-herre-dame-model-kan-endnu-ikke-bestilles/"
+  },
+  {
+   "id": "termovest-kan-endnu-ikke-bestilles",
+   "kategori": "Overtøj",
+   "titel": "Termovest",
+   "noter": [
+    "Broderi: Kendingstegn eller Kendingstegn med afdelingsnavn/Marineforeningen"
+   ],
+   "billede": "/assets/img/slop/termovest-kan-endnu-ikke-bestilles.jpg",
+   "varianter": [
+    {
+     "varenr": "C260048",
+     "tekst": "48/Smal"
+    },
+    {
+     "varenr": "C260050",
+     "tekst": "50/Medium"
+    },
+    {
+     "varenr": "C260052",
+     "tekst": "52/Large"
+    },
+    {
+     "varenr": "C260054",
+     "tekst": "54/X-large"
+    },
+    {
+     "varenr": "C260056",
+     "tekst": "56/XX-large"
+    },
+    {
+     "varenr": "C260058",
+     "tekst": "58/XXX-large"
+    },
+    {
+     "varenr": "C260058",
+     "tekst": "60/XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/overtoej/termovest-kan-endnu-ikke-bestilles/"
+  },
+  {
+   "id": "vinterjakke-marineblaa",
+   "kategori": "Overtøj",
+   "titel": "Vinterjakke, marineblå",
+   "noter": [
+    "Udgår – kan bestilles, så længe lager haves."
+   ],
+   "billede": "/assets/img/slop/vinterjakke-marineblaa.jpg",
+   "varianter": [
+    {
+     "varenr": "C250048",
+     "tekst": "48/Smal"
+    },
+    {
+     "varenr": "C250058",
+     "tekst": "58/XXX-large"
+    },
+    {
+     "varenr": "C250060",
+     "tekst": "60/XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/overtoej/vinterjakke-marineblaa/"
+  },
+  {
+   "id": "polo-shirt-hvid",
+   "kategori": "Polo shirt",
+   "titel": "Polo-shirt, hvid",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/polo-shirt-hvid.jpg",
+   "varianter": [
+    {
+     "varenr": "C121048",
+     "tekst": "Smal"
+    },
+    {
+     "varenr": "C121050",
+     "tekst": "Medium"
+    },
+    {
+     "varenr": "C121052",
+     "tekst": "Large"
+    },
+    {
+     "varenr": "C121054",
+     "tekst": "X-large"
+    },
+    {
+     "varenr": "C121056",
+     "tekst": "XX-large"
+    },
+    {
+     "varenr": "C121058",
+     "tekst": "XXX-large"
+    },
+    {
+     "varenr": "C121060",
+     "tekst": "XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/polo-shirt/polo-shirt-hvid/"
+  },
+  {
+   "id": "polo-shirt-marine",
+   "kategori": "Polo shirt",
+   "titel": "Polo-shirt, marine",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/polo-shirt-marine.jpg",
+   "varianter": [
+    {
+     "varenr": "C120048",
+     "tekst": "Smal"
+    },
+    {
+     "varenr": "C120050",
+     "tekst": "Medium"
+    },
+    {
+     "varenr": "C120052",
+     "tekst": "Large"
+    },
+    {
+     "varenr": "C120054",
+     "tekst": "X-large"
+    },
+    {
+     "varenr": "C120056",
+     "tekst": "XX-large"
+    },
+    {
+     "varenr": "C120058",
+     "tekst": "XXX-large"
+    },
+    {
+     "varenr": "C120060",
+     "tekst": "XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/polo-shirt/polo-shirt-marine/"
+  },
+  {
+   "id": "skjorte-hvid-m-kort-aerme",
+   "kategori": "Skjorter",
+   "titel": "Skjorte, hvid m. kort ærme",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/skjorte-hvid-m-kort-aerme.jpg",
+   "varianter": [
+    {
+     "varenr": "C201037",
+     "tekst": "37/38"
+    },
+    {
+     "varenr": "C201039",
+     "tekst": "39/40"
+    },
+    {
+     "varenr": "C201041",
+     "tekst": "41/42"
+    },
+    {
+     "varenr": "C201043",
+     "tekst": "43/44"
+    },
+    {
+     "varenr": "C201045",
+     "tekst": "45/46"
+    },
+    {
+     "varenr": "C201047",
+     "tekst": "47/48"
+    },
+    {
+     "varenr": "C201049",
+     "tekst": "49/50"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/skjorter/skjorte-hvid-m-kort-aerme/"
+  },
+  {
+   "id": "skjorte-lyseblaa-m-kort-aerme",
+   "kategori": "Skjorter",
+   "titel": "Skjorte, lyseblå m. kort ærme",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/skjorte-lyseblaa-m-kort-aerme.jpg",
+   "varianter": [
+    {
+     "varenr": "C200037",
+     "tekst": "37/38"
+    },
+    {
+     "varenr": "C200039",
+     "tekst": "39/40"
+    },
+    {
+     "varenr": "C200041",
+     "tekst": "41/42"
+    },
+    {
+     "varenr": "C200043",
+     "tekst": "43/44"
+    },
+    {
+     "varenr": "C200045",
+     "tekst": "45/46"
+    },
+    {
+     "varenr": "C200047",
+     "tekst": "47/48"
+    },
+    {
+     "varenr": "C200049",
+     "tekst": "49/50"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/skjorter/skjorte-lyseblaa-m-kort-aerme/"
+  },
+  {
+   "id": "skjorte-lyseblaa-m-langt-oerme",
+   "kategori": "Skjorter",
+   "titel": "Skjorte, lyseblå m. langt ærme",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/skjorte-lyseblaa-m-langt-oerme.jpg",
+   "varianter": [
+    {
+     "varenr": "C210037",
+     "tekst": "37/38"
+    },
+    {
+     "varenr": "C210039",
+     "tekst": "39/40"
+    },
+    {
+     "varenr": "C210041",
+     "tekst": "41/42"
+    },
+    {
+     "varenr": "C210043",
+     "tekst": "43/44"
+    },
+    {
+     "varenr": "C210045",
+     "tekst": "45/46"
+    },
+    {
+     "varenr": "C210047",
+     "tekst": "47/48"
+    },
+    {
+     "varenr": "C210049",
+     "tekst": "49/50"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/skjorter/skjorte-lyseblaa-m-langt-oerme/"
+  },
+  {
+   "id": "skjorter-hvid-m-langt-aerme",
+   "kategori": "Skjorter",
+   "titel": "Skjorter, hvid m. langt ærme",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/skjorter-hvid-m-langt-aerme.jpg",
+   "varianter": [
+    {
+     "varenr": "C211037",
+     "tekst": "37/38"
+    },
+    {
+     "varenr": "C211039",
+     "tekst": "39/40"
+    },
+    {
+     "varenr": "C211041",
+     "tekst": "41/42"
+    },
+    {
+     "varenr": "C211043",
+     "tekst": "43/44"
+    },
+    {
+     "varenr": "C211045",
+     "tekst": "45/46"
+    },
+    {
+     "varenr": "C211047",
+     "tekst": "47/48"
+    },
+    {
+     "varenr": "C211049",
+     "tekst": "49/50"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/skjorter/skjorter-hvid-m-langt-aerme/"
+  },
+  {
+   "id": "t-shirt-hvid",
+   "kategori": "T-shirt",
+   "titel": "T-shirt, hvid",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/t-shirt-hvid.jpg",
+   "varianter": [
+    {
+     "varenr": "C131048",
+     "tekst": "Smal"
+    },
+    {
+     "varenr": "C131050",
+     "tekst": "Medium"
+    },
+    {
+     "varenr": "C131052",
+     "tekst": "Large"
+    },
+    {
+     "varenr": "C131054",
+     "tekst": "X-large"
+    },
+    {
+     "varenr": "C131056",
+     "tekst": "XX-large"
+    },
+    {
+     "varenr": "C131058",
+     "tekst": "XXX-large"
+    },
+    {
+     "varenr": "C131060",
+     "tekst": "XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/t-shirt/t-shirt-hvid/"
+  },
+  {
+   "id": "t-shirt-marine",
+   "kategori": "T-shirt",
+   "titel": "T-shirt, marine",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/t-shirt-marine.jpg",
+   "varianter": [
+    {
+     "varenr": "C130048",
+     "tekst": "Smal"
+    },
+    {
+     "varenr": "C130050",
+     "tekst": "Medium"
+    },
+    {
+     "varenr": "C130052",
+     "tekst": "Large"
+    },
+    {
+     "varenr": "C130054",
+     "tekst": "X-large"
+    },
+    {
+     "varenr": "C130056",
+     "tekst": "XX-large"
+    },
+    {
+     "varenr": "C130058",
+     "tekst": "XXX-large"
+    },
+    {
+     "varenr": "C130060",
+     "tekst": "XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/t-shirt/t-shirt-marine/"
+  },
+  {
+   "id": "polo-sweater",
+   "kategori": "Trøjer/Sweater",
+   "titel": "Pullover",
+   "noter": [],
+   "billede": "/assets/img/slop/polo-sweater.jpg",
+   "varianter": [
+    {
+     "varenr": "C050048",
+     "tekst": "48/Smal"
+    },
+    {
+     "varenr": "C050050",
+     "tekst": "50/Medium"
+    },
+    {
+     "varenr": "C050052",
+     "tekst": "52/Large"
+    },
+    {
+     "varenr": "C050054",
+     "tekst": "54/X-large"
+    },
+    {
+     "varenr": "C050056",
+     "tekst": "56/XX-large"
+    },
+    {
+     "varenr": "C050058",
+     "tekst": "58/XXX-large"
+    },
+    {
+     "varenr": "C050060",
+     "tekst": "60/XXXX-large"
+    },
+    {
+     "varenr": "C050062",
+     "tekst": "62"
+    },
+    {
+     "varenr": "C050064",
+     "tekst": "64"
+    },
+    {
+     "varenr": "C050066",
+     "tekst": "66"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/troejer-sweater/polo-sweater/"
+  },
+  {
+   "id": "5926-2",
+   "kategori": "Trøjer/Sweater",
+   "titel": "Sweat cardigan/Fleece",
+   "noter": [
+    "Broderi: Kendingstegn eller Kendingstegn med afdelingsnavn/Marineforeningen"
+   ],
+   "billede": "/assets/img/slop/5926-2.jpg",
+   "varianter": [
+    {
+     "varenr": "C080048",
+     "tekst": "48/Smal"
+    },
+    {
+     "varenr": "C080050",
+     "tekst": "50/Medium"
+    },
+    {
+     "varenr": "C080052",
+     "tekst": "52/Large"
+    },
+    {
+     "varenr": "C080054",
+     "tekst": "54/X-large"
+    },
+    {
+     "varenr": "C080056",
+     "tekst": "56/XX-large"
+    },
+    {
+     "varenr": "C080058",
+     "tekst": "58/XXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/troejer-sweater/5926-2/"
+  },
+  {
+   "id": "sweatshirt",
+   "kategori": "Trøjer/Sweater",
+   "titel": "Sweatshirt",
+   "noter": [
+    "(Større størrelser kan bestilles mod merpris)"
+   ],
+   "billede": "/assets/img/slop/sweatshirt.jpg",
+   "varianter": [
+    {
+     "varenr": "C010048",
+     "tekst": "48/Smal"
+    },
+    {
+     "varenr": "C010050",
+     "tekst": "50/Medium"
+    },
+    {
+     "varenr": "C010052",
+     "tekst": "52/Large"
+    },
+    {
+     "varenr": "C010054",
+     "tekst": "54/X-large"
+    },
+    {
+     "varenr": "C010056",
+     "tekst": "56/XX-large"
+    },
+    {
+     "varenr": "C010058",
+     "tekst": "58/XXX-large"
+    },
+    {
+     "varenr": "C010060",
+     "tekst": "60/XXXX-large"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/troejer-sweater/sweatshirt/"
+  },
+  {
+   "id": "baelte-laerred-marineblaa",
+   "kategori": "Tilbehør beklædning",
+   "titel": "Lærredsbælte, marineblå",
+   "noter": [],
+   "billede": "/assets/img/slop/baelte-laerred-marineblaa.jpg",
+   "varianter": [
+    {
+     "varenr": "D100000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/tilbehoer-beklaedning/baelte-laerred-marineblaa/"
+  },
+  {
+   "id": "laerredsbaelte-sort",
+   "kategori": "Tilbehør beklædning",
+   "titel": "Lærredsbælte, sort",
+   "noter": [],
+   "billede": "/assets/img/slop/laerredsbaelte-sort.jpg",
+   "varianter": [
+    {
+     "varenr": "D102000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/tilbehoer-beklaedning/laerredsbaelte-sort/"
+  },
+  {
+   "id": "messeforklaede",
+   "kategori": "Tilbehør beklædning",
+   "titel": "Messeforklæde",
+   "noter": [],
+   "billede": "/assets/img/slop/messeforklaede.jpg",
+   "varianter": [
+    {
+     "varenr": "F020000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/tilbehoer-beklaedning/messeforklaede/"
+  },
+  {
+   "id": "seler",
+   "kategori": "Tilbehør beklædning",
+   "titel": "Seler",
+   "noter": [],
+   "billede": "/assets/img/slop/seler.jpg",
+   "varianter": [
+    {
+     "varenr": "D110120",
+     "tekst": "120 cm"
+    },
+    {
+     "varenr": "D110130",
+     "tekst": "130 cm"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/tilbehoer-beklaedning/seler/"
+  },
+  {
+   "id": "slips",
+   "kategori": "Tilbehør beklædning",
+   "titel": "Slips",
+   "noter": [],
+   "billede": "/assets/img/slop/slips.jpg",
+   "varianter": [
+    {
+     "varenr": "D030000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/tilbehoer-beklaedning/slips/"
+  },
+  {
+   "id": "paracord-armbaand-2",
+   "kategori": "Paracord armbånd",
+   "titel": "Paracord armbånd",
+   "noter": [
+    "(Ekstra leveringstid må påregnes)"
+   ],
+   "billede": "/assets/img/slop/paracord-armbaand-2.jpg",
+   "varianter": [
+    {
+     "varenr": "",
+     "tekst": "16–17 cm"
+    },
+    {
+     "varenr": "",
+     "tekst": "18–20 cm"
+    },
+    {
+     "varenr": "",
+     "tekst": "19–21 cm"
+    },
+    {
+     "varenr": "",
+     "tekst": "20–22 cm"
+    },
+    {
+     "varenr": "",
+     "tekst": "21–23 cm"
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/paracord/paracord-armbaand-2/"
+  },
+  {
+   "id": "mulepose",
+   "kategori": "Diverse",
+   "titel": "Mulepose",
+   "noter": [],
+   "billede": "/assets/img/slop/mulepose.jpg",
+   "varianter": [
+    {
+     "varenr": "F010000",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/diverse/mulepose/"
+  },
+  {
+   "id": "servietter",
+   "kategori": "Diverse",
+   "titel": "Servietter",
+   "noter": [
+    "Servietter 40 x 40 cm. i pakning m. 100 stk."
+   ],
+   "billede": "/assets/img/slop/servietter.jpg",
+   "varianter": [
+    {
+     "varenr": "",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/diverse/servietter/"
+  },
+  {
+   "id": "soevaernets-tamburkorps-60-aars-jubilaeumsbog-m-cd",
+   "kategori": "Diverse",
+   "titel": "Søværnets Tamburkorps 60-års jubilæumsbog m. CD",
+   "noter": [
+    "Søværnets Tamburkorps 60-års jubilæumsbog m. CD giver en kort beskrivelse af korpsets historie i tekst og billeder samt en CD med deres mest ikoniske og elskede stykker, som spænder fra traditionelle marcher til moderne arrangementer.",
+    "Prisen er 125,- kr. + porto"
+   ],
+   "billede": "/assets/img/slop/soevaernets-tamburkorps-60-aars-jubilaeumsbog-m-cd.jpg",
+   "varianter": [
+    {
+     "varenr": "",
+     "tekst": ""
+    }
+   ],
+   "kilde": "https://www.marineforeningen.dk/slopkisten/diverse/soevaernets-tamburkorps-60-aars-jubilaeumsbog-m-cd/"
+  }
+ ]
+}

@@ -127,4 +127,11 @@ $("#ny-nyhed").addEventListener("submit", async (e) => {
   $("#ny-nyhed").dato.value = idagISO();
   hentMedlemmer();
   hentNyheder();
+  // Billeder der venter på godkendelse
+  api("/billeder").then((b) => {
+    const n = b.filter((x) => !x.godkendt).length;
+    if (!n) return;
+    const note = h("p", { class: "note" }, h("b", {}, `${n} ${n === 1 ? "billede venter" : "billeder venter"} på godkendelse. `), h("a", { href: "/galleri/" }, "Gå til galleriet"));
+    $("#indhold").prepend(note);
+  }).catch(() => {});
 })();

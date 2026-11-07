@@ -136,7 +136,7 @@ if (knap && menu) {
   });
 }
 // Luk kontomenuen ved klik udenfor
-const smal = matchMedia("(max-width: 1200px)");
+const smal = matchMedia("(max-width: 1279px)");
 document.addEventListener("click", (e) => { const k = document.querySelector(".konto[open]"); if (k && !smal.matches && !k.contains(e.target)) k.open = false; });
 // I mobilmenuen er kontopunkterne altid foldet ud.
 const kontoFold = () => { const k = document.querySelector(".konto"); if (k) k.open = smal.matches; };

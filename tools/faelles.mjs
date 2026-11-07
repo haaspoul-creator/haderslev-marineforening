@@ -18,6 +18,7 @@ const MENU = [
   ["/vagter/", "Vagter", "vagter"],
   ["/beskeder/", "Beskeder", "beskeder"],
   ["/galleri/", "Galleri", "galleri"],
+  ["/slopkisten/", "Slopkisten", "slop"],
 ];
 
 const SIDER = {
@@ -31,10 +32,11 @@ const SIDER = {
   "administration/index.html": "",
   "forslag/index.html": "",
   "rundvisning/index.html": "",
+  "slopkisten/index.html": "slop",
   "404.html": "",
 };
 
-const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="19" fill="#2b7bb9"/><circle cx="20" cy="11" r="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M20 14v17M14 18h12M11 25c0 5 4 7 9 7s9-2 9-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+const LOGO = `<img src="/assets/img/logo-96.png" width="44" height="44" alt="">`;
 
 function top(aktiv) {
   const punkter = MENU.map(([href, tekst, noegle]) =>

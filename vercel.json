@@ -52,7 +52,7 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "api/_skema.sql"
+      "includeFiles": "api/_{skema.sql,slopkisten.json}"
     }
   }
 }

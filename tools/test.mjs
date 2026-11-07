@@ -208,6 +208,62 @@ await sql`insert into arrangementer (titel, dato, tilmelding) values ('Gammel fe
 const [gf] = await sql`select id from arrangementer where titel = 'Gammel fest'`;
 tjek("kan IKKE tilmelde sig overstået arrangement", (await gaest(`/arrangementer/${gf.id}/tilmeld`, "POST", { navn: "X", antal: 1 })).status === 400);
 
+// Billeder i galleriet
+const fotoM = await medlem("Foto Fie", "fie@test.dk");
+const { readFileSync: rf } = await import("node:fs");
+const jpg = rf(new URL("../assets/img/galleri/julefrokost-2023-1-lille.jpg", import.meta.url)).toString("base64");
+const nytB = (k, ekstra = {}) => k("/billeder", "POST", { titel: "Julefrokost 2026", alt: "Medlemmer ved langbordet", dato: "2026-11-27", stor: jpg, lille: jpg, bredde: 481, hoejde: 640, ...ekstra });
+tjek("anonym kan IKKE uploade", (await nytB(anon)).status === 401);
+tjek("skrivebeskyttet kan IKKE uploade", (await nytB(lis.k)).status === 403);
+const bb = await nytB(fotoM.k);
+tjek("medlem kan uploade (ikke godkendt endnu)", ok(bb) && bb.data.godkendt === false);
+tjek("ikke-JPEG afvises", (await nytB(fotoM.k, { stor: Buffer.from("<svg onload=alert(1)>").toString("base64") })).status === 400);
+tjek("manglende beskrivelse afvises", (await nytB(fotoM.k, { alt: " " })).status === 400);
+tjek("ugyldige mål afvises", (await nytB(fotoM.k, { bredde: 0 })).status === 400);
+tjek("anonym ser IKKE ikke-godkendt billede i listen", !(await anon("/billeder")).data.some((x) => x.id === bb.data.id));
+tjek("andet medlem ser det IKKE", !(await carlFoer.k("/billeder")).data.some((x) => x.id === bb.data.id));
+tjek("uploader ser sit eget", (await fotoM.k("/billeder")).data.some((x) => x.id === bb.data.id));
+tjek("admin ser det", (await admin("/billeder")).data.some((x) => x.id === bb.data.id && x.navn === "Foto Fie"));
+tjek("anonym kan IKKE hente filen før godkendelse", (await fetch(`${B}/api/billeder/${bb.data.id}/stor`)).status === 404);
+tjek("medlem kan IKKE godkende", (await fotoM.k("/billeder/" + bb.data.id, "PATCH", { godkendt: true })).status === 403);
+tjek("admin godkender", ok(await admin("/billeder/" + bb.data.id, "PATCH", { godkendt: true })));
+const fil = await fetch(`${B}/api/billeder/${bb.data.id}/lille`);
+tjek("godkendt billede kan hentes af alle som JPEG i sandkasse", fil.status === 200 && fil.headers.get("content-type") === "image/jpeg" && /sandbox/.test(fil.headers.get("content-security-policy")) && /public/.test(fil.headers.get("cache-control")));
+tjek("anonym ser godkendt billede i listen", (await anon("/billeder")).data.some((x) => x.id === bb.data.id));
+const ab = await nytB(admin);
+tjek("admins billeder godkendes med det samme", ab.data.godkendt === true);
+tjek("andet medlem kan IKKE slette Bents billede", (await carlFoer.k("/billeder/" + bb.data.id, "DELETE")).status === 403);
+tjek("medlem kan slette sit eget", ok(await fotoM.k("/billeder/" + bb.data.id, "DELETE")));
+tjek("admin kan slette alle", ok(await admin("/billeder/" + ab.data.id, "DELETE")));
+
+// Slopkisten
+const kat = (await anon("/slopkisten")).data;
+tjek("alle kan se varekataloget", kat.varer.length >= 30 && kat.varer.some((v) => v.varianter.some((x) => x.varenr === "C121050")));
+const slopM = await medlem("Slop Sven", "sven@test.dk");
+const polo = kat.varer.find((v) => v.varianter.some((x) => x.varenr === "C121050"));
+const pi = polo.varianter.findIndex((x) => x.varenr === "C121050");
+tjek("anonym kan IKKE bestille", (await anon("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 1 }] })).status === 401);
+tjek("skrivebeskyttet kan IKKE bestille", (await lis.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 1 }] })).status === 403);
+tjek("tom kurv afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [] })).status === 400);
+tjek("ukendt vare afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "findes-ikke", variant: 0, antal: 1 }] })).status === 400);
+tjek("ukendt variant afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: 99, antal: 1 }] })).status === 400);
+tjek("antal 0 afvises", (await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 0 }] })).status === 400);
+const best = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: polo.id, variant: pi, antal: 2 }, { vare: "slips", variant: 0, antal: 1 }], telefon: "12 34 56 78", bemaerkning: "Med afdelingsnavn" });
+tjek("medlem kan bestille", ok(best) && !!best.data.id);
+const mineB = (await slopM.k("/slopkisten/bestillinger")).data;
+tjek("medlem ser sin bestilling med varenr fra kataloget", mineB.length === 1 && mineB[0].linjer[0].varenr === "C121050" && mineB[0].linjer[0].variant === "Medium" && mineB[0].linjer[0].antal === 2);
+tjek("bestillingen har medlemmets navn, e-mail og telefon", mineB[0].navn === "Slop Sven" && mineB[0].email === "sven@test.dk" && mineB[0].telefon === "12 34 56 78");
+tjek("andet medlem ser IKKE bestillingen", (await carlFoer.k("/slopkisten/bestillinger")).data.length === 0);
+tjek("admin ser alle bestillinger", (await admin("/slopkisten/bestillinger")).data.some((b) => b.id === best.data.id));
+tjek("medlem kan IKKE ændre status til udleveret", (await slopM.k(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "udleveret" })).status === 403);
+tjek("andet medlem kan IKKE annullere", (await carlFoer.k(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "annulleret" })).status === 403);
+tjek("admin sætter status 'bestilt'", ok(await admin(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "bestilt" })));
+tjek("medlem kan IKKE annullere, når den er bestilt", (await slopM.k(`/slopkisten/bestillinger/${best.data.id}`, "PATCH", { status: "annulleret" })).status === 403);
+const best2 = await slopM.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }] });
+tjek("medlem kan annullere en ny bestilling", ok(await slopM.k(`/slopkisten/bestillinger/${best2.data.id}`, "PATCH", { status: "annulleret" })));
+tjek("medlem kan IKKE slette bestillinger", (await slopM.k(`/slopkisten/bestillinger/${best2.data.id}`, "DELETE")).status === 403);
+tjek("admin kan slette en bestilling", ok(await admin(`/slopkisten/bestillinger/${best2.data.id}`, "DELETE")));
+
 // Forslag
 const carl = await medlem("Carl Carlsen", "carl@test.dk");
 const dora = await medlem("Dora Dam", "dora@test.dk", "laeser");

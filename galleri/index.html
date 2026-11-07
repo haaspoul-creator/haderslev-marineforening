@@ -7,7 +7,8 @@
 <meta name="description" content="Billeder fra Haderslev Marineforenings arrangementer: admiralsforsamling, julefrokost, damemiddag, nytårsparole og besøg i Det Maritime Hus.">
 <link rel="canonical" href="https://haderslevmarineforening.dk/galleri/">
 <meta name="theme-color" content="#b8466b">
-<link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/img/logo-64.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/img/logo-192.png">
 <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="side-galleri">
@@ -15,7 +16,7 @@
 <a class="spring-til-indhold" href="#indhold-start">Spring til indhold</a>
 <header class="top">
   <div class="top-indre">
-    <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="19" fill="#2b7bb9"/><circle cx="20" cy="11" r="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M20 14v17M14 18h12M11 25c0 5 4 7 9 7s9-2 9-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg><span>Haderslev Marineforening</span></a>
+    <a class="brand" href="/"><img src="/assets/img/logo-96.png" width="44" height="44" alt=""><span>Haderslev Marineforening</span></a>
     <button class="menu-knap" type="button" aria-expanded="false" aria-controls="hovedmenu">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Menu
     </button>
@@ -27,6 +28,7 @@
         <li><a href="/vagter/">Vagter</a></li>
         <li><a href="/beskeder/">Beskeder</a></li>
         <li><a href="/galleri/" aria-current="page">Galleri</a></li>
+        <li><a href="/slopkisten/">Slopkisten</a></li>
       </ul>
     </nav>
     <div class="bruger" id="bruger"><a class="btn sm alt" href="/log-ind/">Log ind</a></div>
@@ -37,8 +39,31 @@
 <main id="indhold-start">
   <div class="sidehoved">
     <h1>Galleri</h1>
-    <p>Billeder fra foreningens arrangementer. Tryk på et billede for at se det i fuld størrelse.</p>
+    <p>Billeder fra foreningens arrangementer. Tryk på et billede for at se det i fuld størrelse. Er du medlem, kan du selv lægge billeder ind.</p>
   </div>
+
+  <div id="status" class="note status" hidden></div>
+
+  <details class="kort admin-boks side-galleri" id="upload-boks" hidden>
+    <summary>Læg billeder ind</summary>
+    <form id="upload-form" novalidate>
+      <label for="u-filer">Vælg et eller flere billeder</label>
+      <input id="u-filer" type="file" accept="image/*" multiple>
+      <p class="hjaelp" id="u-hjaelp">Billederne gøres automatisk mindre, og oplysninger som GPS-position fjernes. Læg kun billeder ind, som de viste personer er indforståede med.</p>
+      <div class="felter-form" id="u-faelles" hidden>
+        <div style="grid-column: span 2"><label for="u-titel">Billedtekst <span class="muted">(fx "Julefrokost 2026")</span></label><input id="u-titel" maxlength="120" required></div>
+        <div><label for="u-dato">Dato <span class="muted">(valgfri)</span></label><input id="u-dato" type="date"></div>
+      </div>
+      <ul class="upload-liste" id="u-liste"></ul>
+      <p class="note fejl" id="u-fejl" role="alert" hidden></p>
+      <div class="form-handling" id="u-handling" hidden>
+        <button class="btn" type="submit" id="u-send">Læg i galleriet</button>
+        <button class="btn alt sm" type="button" id="u-annuller">Annuller</button>
+        <span class="muted lille" id="u-fremdrift" aria-live="polite"></span>
+      </div>
+      <p class="muted lille" id="u-godkend-note">Dine billeder kan ses af medlemmerne med det samme og bliver offentlige, når bestyrelsen har godkendt dem.</p>
+    </form>
+  </details>
 
   <div class="galleri">
     <figure id="admiralsforsamling-2024">

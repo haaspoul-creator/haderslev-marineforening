@@ -12,7 +12,7 @@ Den enklest mulige opbygning:
 | Vagter, Beskeder | kræver login |
 | Administration | kun administratorer |
 
-Alle regler for, hvem der må hvad, ligger i `api/index.js` og testes af `tools/test.mjs`.
+Varekataloget til slopkisten ligger i `api/_slopkisten.json`. Alle regler for, hvem der må hvad, ligger i `api/index.js` og testes af `tools/test.mjs`.
 
 ## Drift på Vercel + Neon (gratis)
 1. Læg mappen på GitHub, og importer repositoriet på vercel.com (Add New → Project). Der er intet byggetrin.

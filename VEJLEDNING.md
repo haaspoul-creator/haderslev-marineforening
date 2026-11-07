@@ -17,6 +17,17 @@
 - Dine vagter er fremhævet og mærket **Din vagt**. Står der **Fuld**, er alle pladser taget.
 - På mobil vises hver vagt som et kort med fluebenet nederst.
 
+## Billeder i galleriet (medlemmer)
+- Gå til **Galleri**, og tryk **Læg billeder ind**. Vælg et eller flere billeder (højst 20 ad gangen) fra telefonen eller computeren.
+- Skriv en fælles **billedtekst** (fx "Julefrokost 2026"), evt. en dato, og for hvert billede kort **hvad det viser** (bruges af blinde og svagtseende). Tryk **Læg i galleriet**.
+- Billederne gøres automatisk mindre, og GPS-oplysninger fjernes. Læg kun billeder ind, som de viste personer er indforståede med.
+- Dine billeder kan ses af medlemmerne med det samme og bliver offentlige, når bestyrelsen har godkendt dem. Du kan altid slette dine egne billeder.
+
+## Slopkisten (medlemmer)
+- Gå til **Slopkisten**. Find varen via kategorierne eller ved at søge på navn eller varenummer (fx C121050).
+- Vælg størrelse/variant og antal, og tryk **Læg i kurv**. Skriv evt. telefon og en bemærkning (fx broderi), og tryk **Send bestilling**.
+- Slopbestyreren kontakter dig om pris, betaling og udlevering. Under **Mine bestillinger** kan du følge status, og du kan annullere, så længe bestillingen står som **Ny**.
+
 ## Beskeder (medlemmer)
 - Skriv i feltet og tryk **Send besked**. Du kan slette dine egne beskeder (tryk **Slet** to gange).
 
@@ -25,6 +36,10 @@
 - Du kan følge dit forslag og se bestyrelsens svar. Et forslag, der ikke er behandlet endnu, kan du trække tilbage.
 
 ## For administratorer
+**Billeder:** Nye billeder fra medlemmer har en orange stiplet ramme og "Afventer godkendelse" i galleriet. Tryk **Godkend** for at gøre dem offentlige, eller **Slet**. På Administration står, hvor mange der venter.
+
+**Slopkisten:** Øverst på siden Slopkisten ser administratorer alle bestillinger med medlemmets navn, e-mail og telefon. Skift status (Ny → Bestilt hjem → Klar til afhentning → Udleveret, eller Annulleret) – medlemmet ser status med det samme. Tryk **Udskriv** for at udskrive den enkelte bestilling på én side med varenumre og felter til dato for udlevering og betaling. Varekataloget ligger i filen `api/_slopkisten.json` (hentet fra marineforeningen.dk) og kan rettes der.
+
 **Forslag:** Gå til **Forslag** (link under Administration). Sæt status (Ny, I gang, Udført, Ikke aktuelt), skriv evt. et kort svar og tryk **Gem**. Medlemmet ser svaret med det samme.
 
 **Tilføj arrangement:** Gå til **Arrangementskalender** → tryk **Tilføj arrangement** → udfyld titel og dato (tid, sted og beskrivelse er valgfrit). Vælg om der skal være **tilmelding med navn og antal** (slået til som standard), og skriv evt. et **maks. antal personer** → **Tilføj til kalenderen**.

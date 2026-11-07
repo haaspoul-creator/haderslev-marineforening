@@ -112,3 +112,42 @@ create table if not exists arrangement_tilmeldinger (
 );
 create index if not exists arr_tilm_arr on arrangement_tilmeldinger (arrangement_id);
 create index if not exists arr_tilm_kilde on arrangement_tilmeldinger (kilde_hash, oprettet);
+
+-- Billeder i galleriet, lagt ind af medlemmer. Offentlige først når en administrator har godkendt dem.
+create table if not exists billeder (
+  id        bigint generated always as identity primary key,
+  bruger_id bigint references brugere (id) on delete set null,
+  titel     text not null check (char_length(btrim(titel)) between 1 and 120),
+  alt       text not null check (char_length(btrim(alt)) between 1 and 300),
+  dato      date,
+  godkendt  boolean not null default false,
+  bredde    int not null check (bredde between 1 and 4000),
+  hoejde    int not null check (hoejde between 1 and 4000),
+  stor      bytea not null,
+  lille     bytea not null,
+  oprettet  timestamptz not null default now()
+);
+create index if not exists billeder_oprettet on billeder (oprettet desc);
+
+-- Slopkisten: medlemmernes bestillinger (varerne ligger i api/_slopkisten.json)
+create table if not exists slop_bestillinger (
+  id          bigint generated always as identity primary key,
+  bruger_id   bigint references brugere (id) on delete set null,
+  navn        text not null,                 -- navn og e-mail gemmes, så bestillingen kan udskrives, også hvis kontoen slettes
+  email       text not null,
+  telefon     text not null default '' check (char_length(telefon) <= 30),
+  bemaerkning text not null default '' check (char_length(bemaerkning) <= 1000),
+  status      text not null default 'ny' check (status in ('ny', 'bestilt', 'klar', 'udleveret', 'annulleret')),
+  oprettet    timestamptz not null default now(),
+  opdateret   timestamptz not null default now()
+);
+create table if not exists slop_linjer (
+  id            bigint generated always as identity primary key,
+  bestilling_id bigint not null references slop_bestillinger (id) on delete cascade,
+  vare_id       text not null,
+  varenr        text not null default '',
+  titel         text not null,
+  variant       text not null default '',
+  antal         int not null check (antal between 1 and 50)
+);
+create index if not exists slop_linjer_best on slop_linjer (bestilling_id);

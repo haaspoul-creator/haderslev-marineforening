@@ -439,6 +439,120 @@ rute("DELETE", "/forslag/:id", async ({ bruger, p }) => {
   return { ok: true };
 });
 
+// Billeder i galleriet. Billederne gøres mindre i browseren (JPEG, uden metadata) før upload.
+const erJpeg = (b) => b.length > 4 && b[0] === 0xff && b[1] === 0xd8 && b[b.length - 2] === 0xff && b[b.length - 1] === 0xd9;
+rute("GET", "/billeder", async ({ bruger }) => sql`
+  select b.id, b.titel, b.alt, b.dato::text, b.godkendt, b.bredde, b.hoejde, b.oprettet, b.bruger_id, u.navn
+  from billeder b left join brugere u on u.id = b.bruger_id
+  where b.godkendt or ${bruger?.rolle === "admin"} or (${bruger ? bruger.id : null}::bigint is not null and b.bruger_id = ${bruger ? bruger.id : null}::bigint)
+  order by coalesce(b.dato, b.oprettet::date) desc, b.id desc limit 300`);
+rute("POST", "/billeder", async ({ bruger, body }) => {
+  kraevSkriv(bruger);
+  const titel = tekst(body.titel, 120, "billedteksten", true);
+  const alt = tekst(body.alt, 300, "beskrivelsen af billedet", true);
+  const d = body.dato ? dato(body.dato) : null;
+  const stor = Buffer.from(String(body.stor || ""), "base64"), lille = Buffer.from(String(body.lille || ""), "base64");
+  if (!erJpeg(stor) || !erJpeg(lille)) throw new Fejl(400, "Billedet kunne ikke læses. Prøv et andet billede.");
+  if (stor.length > 2.5 * 1024 * 1024 || lille.length > 400 * 1024) throw new Fejl(413, "Billedet er for stort.");
+  const w = Number(body.bredde), hh = Number(body.hoejde);
+  if (!Number.isInteger(w) || !Number.isInteger(hh) || w < 1 || hh < 1 || w > 4000 || hh > 4000) throw new Fejl(400, "Ugyldige billedmål.");
+  const [{ antal }] = await sql`select count(*)::int antal from billeder where bruger_id = ${bruger.id} and oprettet > now() - interval '1 day'`;
+  if (antal >= 40) throw new Fejl(429, "Du har lagt mange billeder ind i dag. Prøv igen i morgen.");
+  const [b] = await sql`insert into billeder (bruger_id, titel, alt, dato, godkendt, bredde, hoejde, stor, lille)
+    values (${bruger.id}, ${titel}, ${alt}, ${d}, ${bruger.rolle === "admin"}, ${w}, ${hh}, ${stor}, ${lille}) returning id, godkendt`;
+  return b;
+});
+rute("PATCH", "/billeder/:id", async ({ bruger, body, p }) => {
+  kraevAdmin(bruger);
+  const r = await sql`update billeder set godkendt = ${!!body.godkendt},
+    titel = coalesce(${body.titel === undefined ? null : tekst(body.titel, 120, "billedteksten", true)}, titel),
+    alt = coalesce(${body.alt === undefined ? null : tekst(body.alt, 300, "beskrivelsen", true)}, alt) where id = ${p.id}`;
+  if (!r.count) throw new Fejl(404, "Billedet findes ikke længere.");
+  return { ok: true };
+});
+rute("DELETE", "/billeder/:id", async ({ bruger, p }) => {
+  kraevLogin(bruger);
+  const r = bruger.rolle === "admin"
+    ? await sql`delete from billeder where id = ${p.id}`
+    : await sql`delete from billeder where id = ${p.id} and bruger_id = ${bruger.id}`;
+  if (!r.count) throw new Fejl(403, "Du kan kun slette dine egne billeder.");
+  return { ok: true };
+});
+for (const str of ["stor", "lille"]) {
+  rute("GET", `/billeder/:id/${str}`, async ({ bruger, p, res }) => {
+    const [b] = str === "stor"
+      ? await sql`select stor data, godkendt, bruger_id from billeder where id = ${p.id}`
+      : await sql`select lille data, godkendt, bruger_id from billeder where id = ${p.id}`;
+    const maa = b && (b.godkendt || bruger?.rolle === "admin" || (bruger && String(b.bruger_id) === String(bruger.id)));
+    if (!maa) throw new Fejl(404, "Billedet findes ikke.");
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Cache-Control", b.godkendt ? "public, max-age=86400" : "private, no-store");
+    res.setHeader("Content-Security-Policy", "sandbox");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.end(b.data);
+    return undefined;
+  });
+}
+
+// Slopkisten: varekatalog (fra marineforeningen.dk) og medlemmernes bestillinger.
+const SLOP = JSON.parse(readFileSync(new URL("./_slopkisten.json", import.meta.url), "utf8"));
+const SLOP_VARER = new Map(SLOP.varer.map((v) => [v.id, v]));
+const SLOP_STATUS = ["ny", "bestilt", "klar", "udleveret", "annulleret"];
+rute("GET", "/slopkisten", async () => SLOP);
+const hentBestillinger = (hvor) => sql`
+  select b.id, b.bruger_id, b.navn, b.email, b.telefon, b.bemaerkning, b.status, b.oprettet, b.opdateret,
+    coalesce((select json_agg(json_build_object('varenr', l.varenr, 'titel', l.titel, 'variant', l.variant, 'antal', l.antal) order by l.id)
+      from slop_linjer l where l.bestilling_id = b.id), '[]') linjer
+  from slop_bestillinger b where ${hvor} order by b.oprettet desc limit 300`;
+rute("GET", "/slopkisten/bestillinger", async ({ bruger }) => {
+  kraevLogin(bruger);
+  return bruger.rolle === "admin" ? hentBestillinger(sql`true`) : hentBestillinger(sql`b.bruger_id = ${bruger.id}`);
+});
+rute("POST", "/slopkisten/bestil", async ({ bruger, body }) => {
+  kraevSkriv(bruger);
+  const linjer = Array.isArray(body.linjer) ? body.linjer : [];
+  if (!linjer.length) throw new Fejl(400, "Kurven er tom.");
+  if (linjer.length > 30) throw new Fejl(400, "Højst 30 forskellige varer pr. bestilling.");
+  const rene = linjer.map((l) => {
+    const v = SLOP_VARER.get(String(l.vare));
+    const variant = v && v.varianter[Number(l.variant)];
+    const antal = Number(l.antal);
+    if (!v || !variant) throw new Fejl(400, "En af varerne findes ikke længere. Opdater siden, og prøv igen.");
+    if (!Number.isInteger(antal) || antal < 1 || antal > 50) throw new Fejl(400, "Antal skal være mellem 1 og 50.");
+    return { vare_id: v.id, varenr: variant.varenr, titel: v.titel, variant: variant.tekst, antal };
+  });
+  const telefon = tekst(body.telefon, 30, "telefonnummeret");
+  const bemaerkning = tekst(body.bemaerkning, 1000, "bemærkningen");
+  const [{ antal }] = await sql`select count(*)::int antal from slop_bestillinger where bruger_id = ${bruger.id} and oprettet > now() - interval '1 day'`;
+  if (antal >= 10) throw new Fejl(429, "Du har sendt mange bestillinger i dag. Kontakt slopbestyreren.");
+  const id = await sql.begin(async (tx) => {
+    const [b] = await tx`insert into slop_bestillinger (bruger_id, navn, email, telefon, bemaerkning)
+      values (${bruger.id}, ${bruger.navn}, ${bruger.email}, ${telefon}, ${bemaerkning}) returning id`;
+    for (const l of rene) await tx`insert into slop_linjer (bestilling_id, vare_id, varenr, titel, variant, antal)
+      values (${b.id}, ${l.vare_id}, ${l.varenr}, ${l.titel}, ${l.variant}, ${l.antal})`;
+    return b.id;
+  });
+  return { id };
+});
+rute("PATCH", "/slopkisten/bestillinger/:id", async ({ bruger, body, p }) => {
+  kraevLogin(bruger);
+  if (!SLOP_STATUS.includes(body.status)) throw new Fejl(400, "Ukendt status.");
+  // Medlemmer kan kun annullere deres egne bestillinger, så længe de ikke er sendt videre.
+  const r = bruger.rolle === "admin"
+    ? await sql`update slop_bestillinger set status = ${body.status}, opdateret = now() where id = ${p.id}`
+    : body.status === "annulleret"
+      ? await sql`update slop_bestillinger set status = 'annulleret', opdateret = now() where id = ${p.id} and bruger_id = ${bruger.id} and status = 'ny'`
+      : { count: 0 };
+  if (!r.count) throw new Fejl(403, bruger.rolle === "admin" ? "Bestillingen findes ikke." : "Du kan kun annullere dine egne bestillinger, før de er sendt videre.");
+  return { ok: true };
+});
+rute("DELETE", "/slopkisten/bestillinger/:id", async ({ bruger, p }) => {
+  kraevAdmin(bruger);
+  await sql`delete from slop_bestillinger where id = ${p.id}`;
+  return { ok: true };
+});
+
 // ---------- Hovedfunktion ----------
 let skemaKlar = null;
 const sikrSkema = () => (skemaKlar ||= sql.unsafe(SKEMA).catch((e) => { skemaKlar = null; throw e; }));

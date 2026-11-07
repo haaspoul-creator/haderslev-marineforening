@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slopkisten – Haderslev Marineforening</title>
+<meta name="description" content="Slopkisten: Marineforeningens emblemer, flag, beklædning og effekter. Medlemmer af Haderslev Marineforening kan bestille med varenummer her.">
+<link rel="canonical" href="https://haderslevmarineforening.dk/slopkisten/">
+<meta name="theme-color" content="#7a5c12">
+<link rel="icon" href="/assets/img/logo-64.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/img/logo-192.png">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="side-slop">
+<!-- FÆLLES:TOP -->
+<a class="spring-til-indhold" href="#indhold-start">Spring til indhold</a>
+<header class="top">
+  <div class="top-indre">
+    <a class="brand" href="/"><img src="/assets/img/logo-96.png" width="44" height="44" alt=""><span>Haderslev Marineforening</span></a>
+    <button class="menu-knap" type="button" aria-expanded="false" aria-controls="hovedmenu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Menu
+    </button>
+    <nav class="hovedmenu" id="hovedmenu" aria-label="Hovedmenu">
+      <ul>
+        <li><a href="/">Hjem</a></li>
+        <li><a href="/om-os/">Om os</a></li>
+        <li><a href="/arrangementskalender/">Arrangementskalender</a></li>
+        <li><a href="/vagter/">Vagter</a></li>
+        <li><a href="/beskeder/">Beskeder</a></li>
+        <li><a href="/galleri/">Galleri</a></li>
+        <li><a href="/slopkisten/" aria-current="page">Slopkisten</a></li>
+      </ul>
+    </nav>
+    <div class="bruger" id="bruger"><a class="btn sm alt" href="/log-ind/">Log ind</a></div>
+  </div>
+</header>
+<!-- /FÆLLES:TOP -->
+
+<main id="indhold-start">
+  <div class="sidehoved">
+    <h1>Slopkisten</h1>
+    <p>Marineforeningens emblemer, flag, beklædning og andre effekter med foreningens kendingstegn. Kun medlemmer kan købe, og varerne forhandles gennem afdelingen. Læg varerne i kurven, og send bestillingen – så kontakter slopbestyreren, Per Koustrup, dig om pris, betaling og udlevering.</p>
+  </div>
+
+  <div id="status" class="note status" hidden></div>
+
+  <section id="admin-bestillinger" class="afsnit" hidden aria-labelledby="t-alle">
+    <div class="sektion-hoved">
+      <h2 id="t-alle">Bestillinger</h2>
+      <label class="skjult-tekst" for="b-filter">Vis bestillinger</label>
+      <select id="b-filter">
+        <option value="aabne">Åbne (ny, bestilt, klar)</option>
+        <option value="ny">Kun nye</option>
+        <option value="alle">Alle</option>
+      </select>
+    </div>
+    <div id="alle-bestillinger"><p class="muted">Henter …</p></div>
+  </section>
+
+  <div class="slop-layout">
+    <section aria-labelledby="t-varer">
+      <h2 id="t-varer" class="skjult-tekst">Varer</h2>
+      <div class="slop-filter">
+        <label class="skjult-tekst" for="s-soeg">Søg efter vare eller varenummer</label>
+        <input id="s-soeg" type="search" placeholder="Søg efter vare eller varenummer, fx C121050">
+        <div class="chips" id="s-kategorier" role="group" aria-label="Kategorier"></div>
+      </div>
+      <p class="muted lille" id="s-antal" aria-live="polite"></p>
+      <div class="varer" id="varer"><p class="muted">Henter varer …</p></div>
+      <p class="muted lille" style="margin-top:20px">Varer, varenumre og billeder er fra <a href="https://www.marineforeningen.dk/slopkisten/" rel="noopener">Danmarks Marineforenings slopkiste</a>.</p>
+    </section>
+
+    <aside class="kurv kort" id="kurv" aria-labelledby="t-kurv">
+      <h2 id="t-kurv">Din bestilling <span class="maerke" id="kurv-antal" hidden></span></h2>
+      <div id="kurv-indhold"></div>
+    </aside>
+  </div>
+
+  <section id="mine" class="afsnit" hidden aria-labelledby="t-mine">
+    <h2 id="t-mine">Mine bestillinger</h2>
+    <div id="mine-bestillinger"></div>
+  </section>
+
+  <button class="kurv-knap btn" type="button" id="kurv-knap" hidden>Se bestilling <span id="kurv-knap-antal"></span></button>
+</main>
+
+<!-- FÆLLES:FOD -->
+<footer class="fod">
+  <div class="fod-indre">
+    <div>
+      <b>Haderslev Marineforening</b>
+      <address>Det Maritime Hus<br>Ved Havnen 18<br>6100 Haderslev</address>
+    </div>
+    <div>
+      <b>Kontakt</b><br>
+      Formand Harry Madsen<br>
+      Telefon: <a href="tel:+4540947875">40 94 78 75</a><br>
+      E-mail: <a href="mailto:Harry.madsen@hotmail.com">Harry.madsen@hotmail.com</a>
+    </div>
+    <div>
+      <b>Marinestuen</b><br>
+      Åben for hyggeligt samvær<br>
+      alle normale lørdage kl. 10–13
+    </div>
+    <p class="smaat">Haderslev Marineforening er en afdeling af Marineforeningen. · <a href="/rundvisning/">Se rundvisningen</a> · <a href="/forslag/">Forslag til hjemmesiden</a></p>
+  </div>
+</footer>
+<!-- /FÆLLES:FOD -->
+<script type="module" src="/assets/js/slopkisten.js"></script>
+</body>
+</html>
