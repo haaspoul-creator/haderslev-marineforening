@@ -14,6 +14,7 @@ const sql = postgres(DB_URL, {
   ssl: /localhost|127\.0\.0\.1/.test(DB_URL || "") ? false : "require",
   prepare: !/-pooler\./.test(DB_URL || ""), // Neons pooler: ingen gemte forespørgsler
   connection: { TimeZone: "Europe/Copenhagen" }, // "i dag" og tidspunkter i dansk tid
+  onnotice: () => {}, // ingen "findes allerede"-beskeder i loggen
 });
 const SKEMA = readFileSync(new URL("./_skema.sql", import.meta.url), "utf8");
 
@@ -554,8 +555,23 @@ rute("DELETE", "/slopkisten/bestillinger/:id", async ({ bruger, p }) => {
 });
 
 // ---------- Hovedfunktion ----------
+// Databasen opdateres automatisk, når skemaet ændres. En lås sørger for, at kun én serverinstans
+// gør det ad gangen (ellers kan samtidige opstarter låse hinanden), og er versionen allerede på plads, springes det over.
+const SKEMA_HASH = hash(SKEMA);
 let skemaKlar = null;
-const sikrSkema = () => (skemaKlar ||= sql.unsafe(SKEMA).catch((e) => { skemaKlar = null; throw e; }));
+const sikrSkema = () => (skemaKlar ||= (async () => {
+  const [{ t }] = await sql`select to_regclass('public.skema_version') t`;
+  if (t) { const [v] = await sql`select hash from skema_version limit 1`; if (v && v.hash === SKEMA_HASH) return; }
+  await sql.begin(async (tx) => {
+    await tx`select pg_advisory_xact_lock(91374)`;
+    await tx.unsafe("create table if not exists skema_version (hash text not null)");
+    const [v] = await tx`select hash from skema_version limit 1`;
+    if (v && v.hash === SKEMA_HASH) return; // en anden instans nåede det først
+    await tx.unsafe(SKEMA);
+    await tx`delete from skema_version`;
+    await tx`insert into skema_version (hash) values (${SKEMA_HASH})`;
+  });
+})().catch((e) => { skemaKlar = null; throw e; }));
 
 export default async function handler(req, res) {
   const u = new URL(req.url, "http://x");
