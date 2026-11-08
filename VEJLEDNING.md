@@ -16,6 +16,7 @@
 - Gå til **Vagter**. Sæt flueben i **Jeg tager vagten** for at tage en vagt. Fjern fluebenet for at afmelde dig.
 - Dine vagter er fremhævet og mærket **Din vagt**. Står der **Fuld**, er alle pladser taget.
 - På mobil vises hver vagt som et kort med fluebenet nederst.
+- **Udskriv vagtliste:** Vælg "Alle kommende vagter" eller en måned, og tryk **Udskriv vagtliste**. Listen viser de tilmeldte og en tom streg for hver ledig plads – god til opslagstavlen i Marinestuen.
 
 ## Billeder i galleriet (medlemmer)
 - Gå til **Galleri**, og tryk **Læg billeder ind**. Vælg et eller flere billeder (højst 20 ad gangen) fra telefonen eller computeren.

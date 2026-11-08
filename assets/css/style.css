@@ -652,3 +652,35 @@ table.oversigt { width: 100%; border-collapse: collapse; font-size: 15px; }
 .mine-kort .status-maerke { margin-left: auto; font-size: 12px; }
 #mine-bestillinger .bestilling:target { box-shadow: 0 0 0 3px var(--acc), var(--sh); }
 .toast { width: max-content; max-width: calc(100vw - 32px); }
+
+/* ---------- Udskriv vagtliste ---------- */
+.udskriv-linje { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 16px; }
+.udskriv-linje label { margin: 0; }
+.udskriv-linje select { width: auto; min-width: 200px; }
+.udskriv-linje .btn svg { flex: none; }
+.print-ark { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  body.udskriv-vagtliste { background: #fff !important; color: #000 !important; }
+  body.udskriv-vagtliste > *:not(main), body.udskriv-vagtliste main > *:not(.print-ark) { display: none !important; }
+  body.udskriv-vagtliste main { padding: 0 !important; max-width: none !important; }
+  body.udskriv-vagtliste .print-ark { display: block !important; font: 12pt/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: #000; }
+  .print-hoved { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 14px; }
+  .print-hoved h1 { font: 700 24pt Georgia, serif; margin: 0; border: 0; }
+  .print-hoved p { margin: 0; }
+  .print-hoved .eyebrow { color: #333 !important; font-size: 9pt; }
+  .print-hoved .udskrevet { margin-left: auto; font-size: 9pt; color: #333; align-self: flex-end; }
+  table.vagtliste { width: 100%; border-collapse: collapse; }
+  .vagtliste th, .vagtliste td { border: 1px solid #555; padding: 6px 8px; text-align: left; vertical-align: top; }
+  .vagtliste thead th { background: #e6e6e6 !important; color: #000 !important; font-size: 9pt; text-transform: uppercase; letter-spacing: .5px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .vagtliste tr.maaned th { background: #f3f3f3 !important; font: 700 12pt Georgia, serif; text-transform: capitalize; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .vagtliste td.dato::first-letter { text-transform: uppercase; }
+  .vagtliste tr { break-inside: avoid; }
+  .vagtliste thead th:nth-child(1) { width: 19%; } .vagtliste thead th:nth-child(2) { width: 8%; }
+  .vagtliste thead th:nth-child(3) { width: 25%; } .vagtliste thead th:nth-child(4) { width: 16%; } .vagtliste thead th:nth-child(5) { width: 32%; }
+  .vagtliste ol { margin: 4px 0 0; padding-left: 18px; }
+  .vagtliste li { min-height: 18pt; }
+  .vagtliste li.ledig { border-bottom: 1px solid #000; width: 85%; }
+  .vagtliste .pladser { font-size: 9pt; color: #333; }
+  .print-fod { margin-top: 14px; font-size: 9pt; color: #333; }
+}

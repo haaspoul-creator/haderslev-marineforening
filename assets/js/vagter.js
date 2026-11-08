@@ -5,9 +5,10 @@ const liste = $("#vagter");
 const status = $("#status");
 let mig = null;
 let editor = null;
+let senesteVagter = [];
 
 async function hent() {
-  try { vis(await api("/vagter")); } catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
+  try { senesteVagter = await api("/vagter"); vis(senesteVagter); opdaterPerioder(); } catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
 }
 
 function vis(rows) {
@@ -84,6 +85,60 @@ async function skift(v, cb) {
   } catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
   hent();
 }
+
+// ---------- Udskriv vagtliste ----------
+const maanedNoegle = (iso) => iso.slice(0, 7);
+function opdaterPerioder() {
+  const valg = $("#u-periode");
+  const nu = valg.value;
+  const maaneder = [...new Set(senesteVagter.map((v) => maanedNoegle(v.dato)))];
+  valg.textContent = "";
+  valg.append(h("option", { value: "" }, "Alle kommende vagter"),
+    ...maaneder.map((m) => h("option", { value: m }, new Date(m + "-15T12:00").toLocaleDateString("da-DK", { month: "long", year: "numeric" }).replace(/^./, (c) => c.toUpperCase()))));
+  if ([...valg.options].some((o) => o.value === nu)) valg.value = nu;
+  $("#udskriv-boks").hidden = !senesteVagter.length;
+}
+
+function bygUdskrift() {
+  const periode = $("#u-periode").value;
+  const vagter = senesteVagter.filter((v) => !periode || maanedNoegle(v.dato) === periode);
+  const titel = periode ? $("#u-periode").selectedOptions[0].textContent : "Alle kommende vagter";
+  const ark = $("#print-vagtliste");
+  ark.textContent = "";
+  ark.append(h("header", { class: "print-hoved" },
+    h("img", { src: "/assets/img/logo-192.png", alt: "", width: "64", height: "64" }),
+    h("div", {}, h("p", { class: "eyebrow" }, "Haderslev Marineforening"), h("h1", {}, "Vagtliste"), h("p", {}, titel)),
+    h("p", { class: "udskrevet" }, "Udskrevet " + new Date().toLocaleDateString("da-DK", { day: "numeric", month: "long", year: "numeric" }))));
+  const tabel = h("table", { class: "vagtliste" },
+    h("thead", {}, h("tr", {}, ["Dato", "Tid", "Vagt", "Sted", "Tilmeldte"].map((k) => h("th", { scope: "col" }, k)))));
+  for (const gruppe of grupperEfterMaaned(vagter)) {
+    const tb = h("tbody", {}, h("tr", { class: "maaned" }, h("th", { colspan: "5", scope: "colgroup" }, gruppe.maaned)));
+    for (const v of gruppe.raekker) {
+      // Tilmeldte med navn, og en tom streg for hver ledig plads, så man kan skrive sig på i hånden.
+      const navne = v.tilmeldte.map((t) => h("li", {}, t.navn || "Medlem"));
+      const ledige = Math.max(0, v.pladser - v.tilmeldte.length);
+      for (let i = 0; i < ledige; i++) navne.push(h("li", { class: "ledig" }, h("span", { class: "skjult-tekst" }, "Ledig plads")));
+      tb.append(h("tr", {},
+        h("td", { class: "dato" }, fmtDag(v.dato)),
+        h("td", {}, v.tid ? fmtTid(v.tid) : "–"),
+        h("td", {}, h("b", {}, v.titel)),
+        h("td", {}, v.sted || "–"),
+        h("td", {}, h("span", { class: "pladser" }, `${v.tilmeldte.length} / ${v.pladser}`), h("ol", {}, navne))));
+    }
+    tabel.append(tb);
+  }
+  ark.append(vagter.length ? tabel : h("p", {}, "Ingen vagter i perioden."),
+    h("p", { class: "print-fod" }, "Skriv dig på en ledig streg, eller sæt flueben på haderslevmarineforening.dk/vagter. Spørgsmål: kontakt bestyrelsen."));
+}
+
+$("#u-print").addEventListener("click", () => {
+  bygUdskrift();
+  document.body.classList.add("udskriv-vagtliste");
+  const ryd = () => { document.body.classList.remove("udskriv-vagtliste"); removeEventListener("afterprint", ryd); };
+  addEventListener("afterprint", ryd);
+  print();
+  setTimeout(ryd, 1500);
+});
 
 (async () => {
   mig = await hentBruger();
