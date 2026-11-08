@@ -631,3 +631,24 @@ table.tabel.linjer { min-width: 0; font-size: 15px; margin-top: 10px; }
 @media (min-width: 1001px) { .felter { grid-template-columns: repeat(6, 1fr); gap: 14px; } .felt { padding: 18px 16px 38px; } .felt b { font-size: clamp(17px, 1.45vw, 20px); } }
 .kraevet { color: var(--fejl); font-weight: 700; }
 input[aria-invalid="true"] { border-color: var(--fejl); }
+
+/* Slopkisten: oversigt, kvittering og dine bestillinger i bestillingsdelen */
+.oversigt-titel { font-size: 15px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-family: system-ui, sans-serif; margin: 4px 0 6px; }
+table.oversigt { width: 100%; border-collapse: collapse; font-size: 15px; }
+.oversigt th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 4px 0 6px; border-bottom: 2px solid var(--line); }
+.oversigt td { padding: 9px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.oversigt td b { display: block; }
+.oversigt-detalje { display: block; font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+.oversigt .antal { text-align: right; width: 70px; white-space: nowrap; padding-left: 8px; }
+.oversigt .antal input { width: 62px; padding: 6px; min-height: 40px; text-align: center; }
+.oversigt .fjern { width: 48px; text-align: right; }
+.oversigt tfoot td { font-weight: 700; border-bottom: 0; padding-top: 10px; }
+.kvittering .bestilt { font: 700 26px Georgia, serif; color: var(--ok); margin: 0 0 2px; }
+.kvittering .oversigt { margin: 10px 0 12px; }
+.mine-kort { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.mine-kort h3 { font-size: 17px; margin-bottom: 8px; }
+.mine-kort ul { list-style: none; margin: 0 0 6px; padding: 0; }
+.mine-kort li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 6px 0; font-size: 15px; }
+.mine-kort .status-maerke { margin-left: auto; font-size: 12px; }
+#mine-bestillinger .bestilling:target { box-shadow: 0 0 0 3px var(--acc), var(--sh); }
+.toast { width: max-content; max-width: calc(100vw - 32px); }

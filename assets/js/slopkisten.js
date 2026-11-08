@@ -18,9 +18,48 @@ function laegIKurv(vare, variant, antal) {
   const k = laesKurv();
   const findes = k.find((l) => l.vare === vare.id && l.variant === variant);
   if (findes) findes.antal = Math.min(50, findes.antal + antal); else k.push({ vare: vare.id, variant, antal });
+  kvittering = null;
   gemKurv(k);
   const v = vare.varianter[variant];
   visStatus(status, `${antal} × ${vare.titel}${v.tekst ? " (" + v.tekst + ")" : ""} er lagt i din bestilling.`, "ok");
+}
+
+let kvittering = null; // senest afsendte bestilling (vises som "Bestilt")
+let mineData = [];
+
+const stk = (n) => `${n} stk.`;
+function oversigtTabel(linjer, redigerbar) {
+  // Oversigt over varerne: varenr., vare, størrelse og antal (antal kan rettes i kurven)
+  const tb = h("tbody");
+  for (const l of linjer) {
+    let antalCelle = l.antal;
+    if (redigerbar) {
+      antalCelle = h("input", { type: "number", min: "1", max: "50", value: String(l.antal), "aria-label": `Antal ${l.titel}${l.variant ? " " + l.variant : ""}`, inputmode: "numeric" });
+      antalCelle.addEventListener("change", () => { const kk = laesKurv(); const x = kk.find((y) => y.vare === l.vare && y.variant === l.vi); if (x) { x.antal = Math.min(50, Math.max(1, Number(antalCelle.value) || 1)); gemKurv(kk); } });
+    }
+    tb.append(h("tr", {},
+      h("td", {}, h("b", {}, l.titel), h("span", { class: "oversigt-detalje" }, [l.varenr, l.variant].filter(Boolean).join(" · ") || "–")),
+      h("td", { class: "antal" }, antalCelle),
+      redigerbar ? h("td", { class: "fjern" }, h("button", { class: "fjern-knap", type: "button", "aria-label": `Fjern ${l.titel}${l.variant ? " " + l.variant : ""} fra bestillingen`,
+        onclick: () => gemKurv(laesKurv().filter((y) => !(y.vare === l.vare && y.variant === l.vi))) }, "×")) : null));
+  }
+  const ialt = linjer.reduce((s, l) => s + l.antal, 0);
+  return h("table", { class: "oversigt" },
+    h("caption", { class: "skjult-tekst" }, redigerbar ? "Oversigt over din bestilling" : "Det har du bestilt"),
+    h("thead", {}, h("tr", {}, h("th", { scope: "col" }, "Vare"), h("th", { scope: "col", class: "antal" }, "Antal"), redigerbar ? h("th", { scope: "col" }, h("span", { class: "skjult-tekst" }, "Fjern")) : null)),
+    tb,
+    h("tfoot", {}, h("tr", {}, h("td", {}, `I alt · ${linjer.length} ${linjer.length === 1 ? "vare" : "varer"}`), h("td", { class: "antal" }, stk(ialt)), redigerbar ? h("td") : null)));
+}
+
+function mineOversigt() {
+  if (!mineData.length) return null;
+  return h("div", { class: "mine-kort" },
+    h("h3", {}, "Dine bestillinger"),
+    h("ul", {}, mineData.slice(0, 5).map((b) => h("li", {},
+      h("a", { href: "#best-" + b.id }, `Nr. ${b.id}`),
+      h("span", { class: "muted lille" }, ` · ${new Date(b.oprettet).toLocaleDateString("da-DK", { day: "numeric", month: "short" })} · ${stk(b.linjer.reduce((s, l) => s + l.antal, 0))}`),
+      h("span", { class: `status-maerke slop-${b.status}` }, STATUS[b.status])))),
+    mineData.length > 5 ? h("a", { class: "lille", href: "#mine" }, "Se alle dine bestillinger") : null);
 }
 
 function visKurv() {
@@ -36,17 +75,24 @@ function visKurv() {
     return;
   }
   if (!kanSkrive(mig)) { el.append(h("p", { class: "muted" }, "Du har kun læseadgang og kan ikke bestille.")); return; }
-  if (!k.length) { el.append(h("p", { class: "muted" }, "Kurven er tom. Vælg størrelse og antal ved en vare, og tryk \"Læg i kurv\".")); return; }
-  const ul = h("ul", { class: "kurv-linjer" });
-  k.forEach((l) => {
-    const v = vareFor(l.vare), va = v.varianter[l.variant];
-    const antal = h("input", { type: "number", min: "1", max: "50", value: String(l.antal), "aria-label": `Antal ${v.titel}`, inputmode: "numeric" });
-    antal.addEventListener("change", () => { const kk = laesKurv(); const x = kk.find((y) => y.vare === l.vare && y.variant === l.variant); if (x) { x.antal = Math.min(50, Math.max(1, Number(antal.value) || 1)); gemKurv(kk); } });
-    ul.append(h("li", {},
-      h("div", {}, h("b", {}, v.titel), h("span", { class: "muted lille" }, varenrTekst(va))),
-      antal,
-      h("button", { class: "fjern-knap", type: "button", "aria-label": `Fjern ${v.titel} fra bestillingen`, onclick: () => gemKurv(laesKurv().filter((y) => !(y.vare === l.vare && y.variant === l.variant))) }, "×")));
-  });
+
+  // Kvittering: det, man lige har bestilt
+  if (kvittering && !k.length) {
+    el.append(h("div", { class: "kvittering", role: "status" },
+      h("p", { class: "bestilt" }, h("span", { "aria-hidden": "true" }, "✓ "), "Bestilt"),
+      h("p", { class: "muted lille" }, `Bestilling nr. ${kvittering.id} · ${kvittering.navn} · ${kvittering.telefon}`),
+      oversigtTabel(kvittering.linjer, false),
+      h("p", { class: "lille" }, "Slopbestyreren kontakter dig om pris, betaling og udlevering."),
+      h("button", { class: "btn alt sm", type: "button", onclick: () => { kvittering = null; visKurv(); } }, "Ny bestilling")));
+    const mo = mineOversigt(); if (mo) el.append(mo);
+    return;
+  }
+  if (!k.length) {
+    el.append(h("p", { class: "muted" }, "Kurven er tom. Vælg størrelse og antal ved en vare, og tryk \"Læg i kurv\"."));
+    const mo = mineOversigt(); if (mo) el.append(mo);
+    return;
+  }
+  const linjer = k.map((l) => { const v = vareFor(l.vare), va = v.varianter[l.variant]; return { vare: l.vare, vi: l.variant, titel: v.titel, varenr: va.varenr, variant: va.tekst, antal: l.antal }; });
   const TLF = "hmf_slop_telefon";
   let gemtTlf = ""; try { gemtTlf = localStorage.getItem(TLF) || ""; } catch { /* privat vindue */ }
   const felt = (id, navn, label, attrs) => [h("label", { for: id }, label, h("span", { class: "kraevet", "aria-hidden": "true" }, " *")),
@@ -59,11 +105,12 @@ function visKurv() {
     h("label", { for: "k-bem" }, "Bemærkning ", h("span", { class: "muted" }, "(valgfri)")),
     h("textarea", { id: "k-bem", name: "bemaerkning", rows: "2", maxlength: "1000", placeholder: "Fx broderi med afdelingsnavn" }),
     h("p", { class: "note fejl", id: "k-fejl", role: "alert", hidden: true }),
-    h("div", { class: "form-handling" }, h("button", { class: "btn", type: "submit" }, "Send bestilling"),
+    h("div", { class: "form-handling" }, h("button", { class: "btn", type: "submit" }, "Bestil"),
       h("button", { class: "btn alt sm", type: "button", onclick: () => gemKurv([]) }, "Tøm")));
   form.addEventListener("input", (e) => { form.querySelector("#k-fejl").hidden = true; e.target.removeAttribute("aria-invalid"); });
   form.addEventListener("submit", sendBestilling);
-  el.append(ul, form);
+  el.append(h("h3", { class: "oversigt-titel" }, "Oversigt"), oversigtTabel(linjer, true), form);
+  const mo = mineOversigt(); if (mo) el.append(mo);
 }
 
 async function sendBestilling(e) {
@@ -74,15 +121,21 @@ async function sendBestilling(e) {
   if (!navn) return vis(f.navn, "Skriv dit navn.");
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return vis(f.email, "Skriv en gyldig e-mail.");
   if (!/^\d{8,15}$/.test(telefon.replace(/[\s+()-]/g, ""))) return vis(f.telefon, "Skriv dit telefonnummer (mindst 8 cifre).");
-  knap.disabled = true;
+  knap.disabled = true; knap.textContent = "Bestiller …";
+  const kurv = laesKurv();
   try {
-    const r = await api("/slopkisten/bestil", { metode: "POST", data: { linjer: laesKurv(), navn, email, telefon, bemaerkning: f.bemaerkning.value } });
+    const r = await api("/slopkisten/bestil", { metode: "POST", data: { linjer: kurv, navn, email, telefon, bemaerkning: f.bemaerkning.value } });
     try { localStorage.setItem("hmf_slop_telefon", telefon); } catch { /* privat vindue */ }
+    kvittering = { id: r.id, navn, telefon, linjer: kurv.map((l) => { const v = vareFor(l.vare), va = v.varianter[l.variant]; return { titel: v.titel, varenr: va.varenr, variant: va.tekst, antal: l.antal }; }) };
     gemKurv([]);
-    visStatus(status, `Tak, ${navn}! Din bestilling nr. ${r.id} er sendt til slopbestyreren, som kontakter dig på ${telefon} eller ${email} om pris og udlevering.`, "ok");
+    // Kvitteringen i bestillingsdelen er selve bekræftelsen; beskeden øverst gentager den til skærmlæsere.
+    $("#kurv").scrollIntoView({ block: "nearest", behavior: "auto" });
+    document.querySelector(".toast")?.classList.remove("vis");
+    status.textContent = `Tak, ${navn}! Din bestilling nr. ${r.id} er bestilt. Slopbestyreren kontakter dig på ${telefon} eller ${email} om pris og udlevering.`;
+    status.className = "note status ok"; status.hidden = false; status.setAttribute("role", "status");
     hentMine();
     if (erAdmin(mig)) hentAlle();
-  } catch (err) { fejl.textContent = fejlTekst(err); fejl.hidden = false; knap.disabled = false; }
+  } catch (err) { fejl.textContent = fejlTekst(err); fejl.hidden = false; knap.disabled = false; knap.textContent = "Bestil"; }
 }
 
 // ---------- Varer ----------
@@ -131,7 +184,7 @@ function visKategorier() {
 
 // ---------- Bestillinger ----------
 function bestillingsKort(b, admin) {
-  const art = h("article", { class: "bestilling kort", "data-id": b.id },
+  const art = h("article", { class: "bestilling kort", "data-id": b.id, id: admin ? null : "best-" + b.id },
     h("header", { class: "bestilling-hoved" },
       h("img", { class: "print-logo", src: "/assets/img/logo-192.png", alt: "", width: "56", height: "56" }),
       h("div", {},
@@ -186,6 +239,8 @@ async function hentMine() {
   let data;
   try { data = await api("/slopkisten/bestillinger"); } catch (e) { visStatus(status, fejlTekst(e), "fejl"); return; }
   const mine = data.filter((b) => String(b.bruger_id) === String(mig.id));
+  mineData = mine;
+  visKurv();
   $("#mine").hidden = !mine.length;
   const el = $("#mine-bestillinger");
   el.textContent = "";
