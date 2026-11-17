@@ -27,7 +27,7 @@ jobs:
             echo "til=false" >> "$GITHUB_OUTPUT"
             echo "::warning title=Dependency graph er slået fra::Tjekket af nye afhængigheder springes over. Slå 'Dependency graph' til under Settings → Code security, så kører det automatisk."
           fi
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
         if: steps.graf.outputs.til == 'true'
         with:
           fail-on-severity: high
