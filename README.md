@@ -14,6 +14,13 @@ Den enklest mulige opbygning:
 
 Varekataloget til slopkisten ligger i `api/_slopkisten.json`. Alle regler for, hvem der må hvad, ligger i `api/index.js` og testes af `tools/test.mjs`.
 
+## Sådan laver I ændringer
+Vercel-projektet er koblet til dette GitHub-repository:
+- **Alt på `main` lægges automatisk ud** på https://haderslev-marineforening.vercel.app cirka et minut efter.
+- **Andre grene** får deres egen prøveadresse (se fanen *Deployments* i Vercel), så ændringer kan ses, før de kommer på den rigtige side.
+- Små tekstrettelser kan laves direkte på github.com: åbn filen, tryk på blyanten ✏️, ret teksten, og tryk **Commit changes**.
+- Ændrer I menu, adresse eller kontaktoplysninger i `tools/faelles.mjs`, så kør `node tools/faelles.mjs` bagefter, så alle sider opdateres.
+
 ## Drift på Vercel + Neon (gratis)
 1. Læg mappen på GitHub, og importer repositoriet på vercel.com (Add New → Project). Der er intet byggetrin.
 2. I Vercel-projektet: **Storage → Create Database → Neon (Postgres)**. Så sættes `DATABASE_URL` automatisk.
