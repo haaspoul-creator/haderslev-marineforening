@@ -12,7 +12,13 @@ const vis = (id) => {
   if (o && !foersteVisning) { o.setAttribute("tabindex", "-1"); o.focus(); }
   foersteVisning = false;
 };
-const tilbageTil = () => { const t = params.get("tilbage"); return t && t.startsWith("/") && !t.startsWith("//") ? t : "/"; };
+// Send kun videre til en side på denne hjemmeside (ingen omdirigering til fremmede sider).
+const tilbageTil = () => {
+  try {
+    const u = new URL(params.get("tilbage") || "/", location.origin);
+    return u.origin === location.origin ? u.pathname + u.search + u.hash : "/";
+  } catch { return "/"; }
+};
 let tilstand = "link"; // "link" | "skift"
 
 (async () => {
@@ -58,7 +64,8 @@ $("#ny-kode-form").addEventListener("submit", async (e) => {
   if (f.kode1.value !== f.kode2.value) { visStatus(status, "De to adgangskoder er ikke ens.", "fejl"); return; }
   try {
     if (tilstand === "skift") {
-      await api("/mig/kode", { metode: "POST", data: { kode: f.kode1.value } });
+      if (!f.nuvaerende.value) { visStatus(status, "Skriv din nuværende adgangskode.", "fejl"); f.nuvaerende.focus(); return; }
+      await api("/mig/kode", { metode: "POST", data: { nuvaerende: f.nuvaerende.value, kode: f.kode1.value } });
       visStatus(status, "Din nye adgangskode er gemt.", "ok");
       f.reset();
       visProfil((await api("/mig")).bruger);
@@ -84,6 +91,8 @@ $("#skift-kode").addEventListener("click", () => {
   $("#ny-kode-titel").textContent = "Skift adgangskode";
   $("#ny-kode-intro").textContent = "Skriv din nye adgangskode to gange.";
   $("#navn-felt").hidden = true;
+  $("#nuv-felt").hidden = false;
+  $("#k-nuvaerende").required = true;
   vis("trin-ny-kode");
 });
 $("#log-ud").addEventListener("click", logUd);

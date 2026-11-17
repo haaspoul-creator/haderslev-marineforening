@@ -4,7 +4,7 @@
 1. Du får et personligt link fra en administrator (på mail eller SMS). Åbn det, ret evt. dit navn, og vælg en adgangskode (mindst 8 tegn).
 2. Næste gang: tryk **Log ind** øverst til højre, og skriv din e-mail og adgangskode.
 3. Glemt adgangskoden? Kontakt en fra bestyrelsen, så får du et nyt link.
-4. Tryk på dit navn øverst til højre (på mobil: i menuen) for Min profil, Forslag, Administration og Log ud. Under Min profil øverst kan du rette dit navn, skifte adgangskode og logge ud.
+4. Tryk på dit navn øverst til højre (på mobil: i menuen) for Min profil, Forslag, Administration og Log ud. Vil du skifte adgangskode, skal du skrive din nuværende adgangskode først. Under Min profil øverst kan du rette dit navn, skifte adgangskode og logge ud.
 
 ## Tilmelding til arrangementer (alle)
 - Gå til **Arrangementskalender** (eller tryk **Tilmeld dig** ved næste arrangement på forsiden), og tryk **Tilmeld**.

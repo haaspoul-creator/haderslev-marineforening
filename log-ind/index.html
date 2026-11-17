@@ -59,6 +59,10 @@
           <label for="ny-navn" style="margin-top:0">Dit navn</label>
           <input id="ny-navn" name="navn" autocomplete="name" maxlength="80">
         </div>
+        <div id="nuv-felt" hidden>
+          <label for="k-nuvaerende">Nuværende adgangskode</label>
+          <input id="k-nuvaerende" name="nuvaerende" type="password" autocomplete="current-password">
+        </div>
         <label for="kode1">Ny adgangskode</label>
         <input id="kode1" name="kode1" type="password" autocomplete="new-password" minlength="8" required aria-describedby="kode-hjaelp">
         <p class="hjaelp" id="kode-hjaelp">Mindst 8 tegn.</p>

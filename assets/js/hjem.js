@@ -37,5 +37,7 @@ import { pdfIkon } from "./ikoner.js";
     h("h3", {}, n.titel),
     h("p", { class: "muted lille" }, fmtDatoLang(n.dato)),
     n.tekst ? h("p", { style: "white-space:pre-line" }, n.tekst) : null,
-    n.pdf_url ? h("a", { class: "pdf-link", href: n.pdf_url }, pdfIkon(), "Download som PDF") : null);
+    n.pdf_url ? h("a", { class: "pdf-link", href: n.pdf_url }, pdfIkon(), n.kun_medlemmer ? "Download som PDF (kun for medlemmer)" : "Download som PDF")
+      : n.kun_medlemmer && n.har_pdf ? h("p", { class: "muted lille" }, "PDF'en kan læses af medlemmer. ", h("a", { href: "/log-ind/?tilbage=/" }, "Log ind"))
+      : null);
 })();
