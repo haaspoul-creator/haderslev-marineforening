@@ -365,16 +365,20 @@ rute("DELETE", "/beskeder/:id", async ({ bruger, p }) => {
 });
 
 // Nyheder (offentlige)
-rute("GET", "/nyheder", async () => sql`
-  select id, titel, tekst, dato::text, case when pdf is not null then '/api/nyheder/' || id || '/pdf' else pdf_url end pdf_url
+// PDF'er markeret "kun for medlemmer" kan kun hentes af brugere, der er logget ind.
+rute("GET", "/nyheder", async ({ bruger }) => sql`
+  select id, titel, tekst, dato::text, kun_medlemmer, (pdf is not null or pdf_url is not null) har_pdf,
+    case when kun_medlemmer and ${!bruger} then null
+         when pdf is not null then '/api/nyheder/' || id || '/pdf' else pdf_url end pdf_url
   from nyheder order by dato desc, id desc limit 20`);
-rute("GET", "/nyheder/:id/pdf", async ({ p, res }) => {
-  const [n] = await sql`select pdf, pdf_navn from nyheder where id = ${p.id} and pdf is not null`;
+rute("GET", "/nyheder/:id/pdf", async ({ bruger, p, res }) => {
+  const [n] = await sql`select pdf, pdf_navn, kun_medlemmer from nyheder where id = ${p.id} and pdf is not null`;
   if (!n) throw new Fejl(404, "Filen findes ikke.");
+  if (n.kun_medlemmer && !bruger) throw new Fejl(401, "Log ind for at læse dette dokument.");
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `inline; filename="${(n.pdf_navn || "dokument.pdf").replace(/[^\w.-]/g, "_")}"`);
-  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Cache-Control", n.kun_medlemmer ? "private, no-store" : "public, max-age=3600");
   res.setHeader("Content-Security-Policy", "sandbox"); // indhold i PDF'en kan ikke køre som en del af siden
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.end(n.pdf);
@@ -388,8 +392,8 @@ rute("POST", "/nyheder", async ({ bruger, body }) => {
     if (pdf.subarray(0, 4).toString() !== "%PDF") throw new Fejl(400, "Filen skal være en PDF.");
     if (pdf.length > 3.2 * 1024 * 1024) throw new Fejl(413, "PDF'en er for stor. Den må højst fylde 3 MB.");
   }
-  await sql`insert into nyheder (titel, tekst, dato, pdf, pdf_navn) values (
-    ${tekst(body.titel, 160, "overskrift", true)}, ${tekst(body.tekst, 5000, "tekst")}, ${dato(body.dato)}, ${pdf}, ${pdf ? tekst(body.pdf_navn, 120, "filnavn") : null})`;
+  await sql`insert into nyheder (titel, tekst, dato, kun_medlemmer, pdf, pdf_navn) values (
+    ${tekst(body.titel, 160, "overskrift", true)}, ${tekst(body.tekst, 5000, "tekst")}, ${dato(body.dato)}, ${ja(body.kun_medlemmer)}, ${pdf}, ${pdf ? tekst(body.pdf_navn, 120, "filnavn") : null})`;
   return { ok: true };
 });
 rute("DELETE", "/nyheder/:id", async ({ bruger, p }) => { kraevAdmin(bruger); await sql`delete from nyheder where id = ${p.id}`; return { ok: true }; });

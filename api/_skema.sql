@@ -163,3 +163,6 @@ create index if not exists login_forsoeg_kilde on login_forsoeg (kilde_hash, tid
 
 -- Ankerposten indeholder persondata og er fjernet fra den offentlige side.
 update nyheder set pdf_url = null where pdf_url = '/dokumenter/ankerposten-2026-3.pdf';
+
+-- Nyheder/PDF'er kan gøres "kun for medlemmer" (fx Ankerposten med fødselsdage og telefonnumre)
+alter table nyheder add column if not exists kun_medlemmer boolean not null default false;

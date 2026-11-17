@@ -120,6 +120,15 @@ const n = (await anon("/nyheder")).data[0];
 const pr = await fetch(B + n.pdf_url);
 tjek("PDF kan hentes af alle", pr.status === 200 && pr.headers.get("content-type") === "application/pdf");
 tjek("ikke-PDF afvises", (await admin("/nyheder", "POST", { titel: "x", dato: "2030-01-01", pdf: Buffer.from("hej").toString("base64"), pdf_navn: "x.pdf" })).status === 400);
+tjek("admin kan lægge PDF kun for medlemmer", ok(await admin("/nyheder", "POST", { titel: "Ankerposten 5", tekst: "Kun for medlemmer", dato: "2030-02-01", pdf, pdf_navn: "ap5.pdf", kun_medlemmer: true })));
+const km = (await anon("/nyheder")).data.find((x) => x.titel === "Ankerposten 5");
+tjek("anonym ser nyheden, men ikke linket til PDF'en", km && km.pdf_url === null && km.har_pdf === true && km.kun_medlemmer === true);
+const kmId = (await sql`select id from nyheder where titel = 'Ankerposten 5'`)[0].id;
+tjek("anonym kan IKKE hente PDF'en direkte", (await fetch(`${B}/api/nyheder/${kmId}/pdf`)).status === 401);
+const kmM = (await bent.k("/nyheder")).data.find((x) => x.titel === "Ankerposten 5");
+tjek("medlem får linket", kmM && kmM.pdf_url === `/api/nyheder/${kmId}/pdf`);
+const kmFil = await fetch(`${B}/api/nyheder/${kmId}/pdf`, { headers: { Cookie: (await (async () => { const r = await fetch(B + "/api/log-ind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "admin@test.dk", kode: KODE }) }); return r.headers.get("set-cookie").split(";")[0]; })()) } });
+tjek("logget ind kan hente PDF'en, og den caches ikke offentligt", kmFil.status === 200 && /private/.test(kmFil.headers.get("cache-control")));
 tjek("medlem kan IKKE lægge nyheder", (await anna.k("/nyheder", "POST", { titel: "x", dato: "2030-01-01" })).status === 403);
 
 // Medlemmer
