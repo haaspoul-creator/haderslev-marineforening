@@ -1,0 +1,14 @@
+# Dependabot foreslår opdateringer som pull requests (som så skal igennem CI).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      afhaengigheder:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly

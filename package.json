@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "node tools/server.mjs"
+    "start": "node tools/server.mjs",
+    "test": "node tools/test.mjs",
+    "test:browser": "node tools/roegtest.mjs"
   },
   "keywords": [],
   "author": "",
@@ -12,5 +14,8 @@
     "postgres": "^3.4.9"
   },
   "type": "module",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
 }

@@ -1,0 +1,101 @@
+# Kører på hver pull request og hver ændring på main.
+# Vercel lægger main ud automatisk, så disse tjek skal være grønne, før en pull request flettes.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kontrol:
+    name: Kontrol (syntaks, fælles sider, npm audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Syntakstjek af al JavaScript
+        run: |
+          for f in api/*.js assets/js/*.js tools/*.mjs; do node --check "$f" || exit 1; done
+          node -e "JSON.parse(require('fs').readFileSync('api/_slopkisten.json','utf8')); JSON.parse(require('fs').readFileSync('vercel.json','utf8'))"
+      - name: Menu og fod er ens på alle sider
+        run: |
+          node tools/faelles.mjs > /dev/null
+          if ! git diff --exit-code -- '*.html'; then
+            echo "::error::Menu/fod passer ikke til tools/faelles.mjs. Kør 'node tools/faelles.mjs' og commit ændringerne."
+            exit 1
+          fi
+      - name: Kendte sårbarheder i afhængigheder
+        run: npm audit --omit=dev --audit-level=high
+
+  api-test:
+    name: API- og rettighedstest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: hmf
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:test@localhost:5432/hmf
+      NODE_ENV: development
+      TZ: Europe/Copenhagen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start server
+        run: bash tools/ci-start-server.sh
+      - name: Kør API-test
+        run: node tools/test.mjs
+
+  browser-test:
+    name: Browsertest (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: hmf
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:test@localhost:5432/hmf
+      NODE_ENV: development
+      TZ: Europe/Copenhagen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start server
+        run: bash tools/ci-start-server.sh
+      - name: Kør røgtest
+        run: node tools/roegtest.mjs

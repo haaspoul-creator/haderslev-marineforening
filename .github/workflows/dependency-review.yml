@@ -1,0 +1,20 @@
+# Stopper pull requests, der tilføjer afhængigheder med kendte, alvorlige sårbarheder.
+name: Afhængigheder
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Tjek af nye afhængigheder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
