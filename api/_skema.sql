@@ -68,7 +68,7 @@ create table if not exists nyheder (
   id       bigint generated always as identity primary key,
   titel    text not null check (char_length(titel) between 1 and 160),
   tekst    text not null default '' check (char_length(tekst) <= 5000),
-  pdf_url  text,          -- link til fil på siden, fx /dokumenter/ankerposten-2026-3.pdf
+  pdf_url  text,          -- link til en offentlig fil på siden (fx /dokumenter/...)
   pdf      bytea,         -- eller selve PDF'en, uploadet fra Administration
   pdf_navn text,
   dato     date not null default current_date,
@@ -80,7 +80,7 @@ create index if not exists nyheder_dato on nyheder (dato desc);
 insert into nyheder (titel, tekst, pdf_url, dato)
 select 'Ankerposten nr. 3/2026',
   'Marinestuen er åben for hyggeligt samvær alle normale lørdage kl. 10–13. Foreningen er flyttet til Kreditbanken og har fået sit eget MobilePay-nummer: 60 55 39 22. Kontingentet er stadig 550 kr. Der er kommet nye medlemmer – både fuldgyldige og passive – og fællesspisningen med grillet lammekølle i april fik rigtig god opbakning.',
-  '/dokumenter/ankerposten-2026-3.pdf', '2026-07-01'
+  null, '2026-07-01'
 -- kun ved allerførste opsætning, så en slettet nyhed ikke dukker op igen
 where not exists (select 1 from nyheder) and not exists (select 1 from brugere);
 
@@ -160,3 +160,6 @@ create table if not exists login_forsoeg (
   tid        timestamptz not null default now()
 );
 create index if not exists login_forsoeg_kilde on login_forsoeg (kilde_hash, tid);
+
+-- Ankerposten indeholder persondata og er fjernet fra den offentlige side.
+update nyheder set pdf_url = null where pdf_url = '/dokumenter/ankerposten-2026-3.pdf';
