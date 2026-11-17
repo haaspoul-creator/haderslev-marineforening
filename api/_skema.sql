@@ -151,3 +151,12 @@ create table if not exists slop_linjer (
   antal         int not null check (antal between 1 and 50)
 );
 create index if not exists slop_linjer_best on slop_linjer (bestilling_id);
+
+-- Login-forsøg (til at bremse gætteri pr. afsender uden at låse kontoen for andre)
+create table if not exists login_forsoeg (
+  id         bigint generated always as identity primary key,
+  kilde_hash text not null,
+  email      text not null,
+  tid        timestamptz not null default now()
+);
+create index if not exists login_forsoeg_kilde on login_forsoeg (kilde_hash, tid);

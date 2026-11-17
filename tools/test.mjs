@@ -57,7 +57,10 @@ tjek("log ud virker", ok(await x("/log-ud", "POST")) && (await x("/mig")).data.b
 const spaerret = klient();
 for (let i = 0; i < 5; i++) await spaerret("/log-ind", "POST", { email: "bent@test.dk", kode: "forkert" + i });
 tjek("spærres efter 5 forkerte forsøg", (await spaerret("/log-ind", "POST", { email: "bent@test.dk", kode: KODE })).status === 429);
-await sql`update brugere set fejl_antal = 0`;
+tjek("spærringen rammer ikke andre konti fra samme sted", ok(await klient()("/log-ind", "POST", { email: "anna@test.dk", kode: KODE })));
+tjek("spærringen ligger på afsenderen, ikke på kontoen (ingen kolonne-lås)", (await sql`select count(*)::int n from login_forsoeg where email = 'bent@test.dk'`)[0].n >= 5);
+await sql`delete from login_forsoeg`;
+tjek("efter spærretiden kan man logge ind igen", ok(await spaerret("/log-ind", "POST", { email: "bent@test.dk", kode: KODE })));
 tjek("CSRF: anden hjemmeside afvises", (await anna.k("/beskeder", "POST", { tekst: "x" }, { Origin: "https://ond.example" })).status === 403);
 
 // Anonym
@@ -153,7 +156,9 @@ tjek("medlem kan IKKE fjerne andre fra vagt", (await carlFoer.k(`/vagter/${v3.id
 tjek("admin kan fjerne en tilmeldt", ok(await admin(`/vagter/${v3.id}/tilmeldte/${carlFoer.id}`, "DELETE")));
 tjek("fjernet fra vagt", (await admin("/vagter")).data.find((x) => x.id === v3.id).tilmeldte.length === 1);
 const andre = klient(); await andre("/log-ind", "POST", { email: "carl0@test.dk", kode: KODE });
-await carlFoer.k("/mig/kode", "POST", { kode: "EnNyKode123" });
+tjek("skift kode kræver den nuværende kode", (await carlFoer.k("/mig/kode", "POST", { nuvaerende: "forkert", kode: "EnNyKode123" })).status === 403);
+tjek("skift kode uden nuværende kode afvises", (await carlFoer.k("/mig/kode", "POST", { kode: "EnNyKode123" })).status === 403);
+await carlFoer.k("/mig/kode", "POST", { nuvaerende: KODE, kode: "EnNyKode123" });
 tjek("skift kode logger andre enheder ud", (await andre("/mig")).data.bruger === null && (await carlFoer.k("/mig")).data.bruger !== null);
 const t0 = Date.now(); await klient()("/log-ind", "POST", { email: "findes.ikke@test.dk", kode: "x" }); const tIkke = Date.now() - t0;
 const t1 = Date.now(); await klient()("/log-ind", "POST", { email: "dora0@test.dk", kode: "x" }); const tFindes = Date.now() - t1;
@@ -292,6 +297,32 @@ tjek("behandlet forslag kan ikke trækkes tilbage", (await carl.k("/forslag/" + 
 const fD = alleF.find((f) => f.navn === "Dora Dam");
 tjek("eget ubehandlet forslag kan trækkes tilbage", ok(await dora.k("/forslag/" + fD.id, "DELETE")));
 tjek("admin kan slette forslag", ok(await admin("/forslag/" + fC.id, "DELETE")));
+
+// Robusthed og rettelser fra sikkerhedsgennemgangen
+const raa = async (sti, metode, rawBody) => (await fetch(B + "/api" + sti, { method: metode, headers: { "Content-Type": "application/json" }, body: rawBody })).status;
+tjek("body 'null' giver 400, ikke 500", (await raa("/log-ind", "POST", "null")) === 400);
+tjek("body som array giver 400", (await raa("/log-ind", "POST", "[]")) === 400);
+tjek("dato som array giver 400", (await admin("/arrangementer", "POST", { titel: "x", dato: ["2030-01-01"] })).status === 400);
+const sl = await medlem("Slop Lars", "lars@test.dk");
+tjek("slopkiste-linje 'null' giver 400", (await sl.k("/slopkisten/bestil", "POST", { linjer: [null], navn: "Lars", email: "lars@test.dk", telefon: "12345678" })).status === 400);
+tjek("e-mail med ? eller & afvises (mailto-manipulation)", (await sl.k("/slopkisten/bestil", "POST", { linjer: [{ vare: "slips", variant: 0, antal: 1 }], navn: "Lars", email: "a@b.dk?cc=x@y.dk", telefon: "12345678" })).status === 400);
+const fbx = await sl.k("/billeder", "POST", { titel: "Test", alt: "Test", stor: jpg, lille: jpg, bredde: 481, hoejde: 640 });
+await admin("/billeder/" + fbx.data.id, "PATCH", { godkendt: true });
+const anonB = (await anon("/billeder")).data.find((x) => x.id === fbx.data.id);
+tjek("anonyme ser ikke navnet på den, der har lagt billedet ind", anonB && anonB.navn === null && anonB.bruger_id === null);
+tjek("medlemmer ser navnet", (await sl.k("/billeder")).data.find((x) => x.id === fbx.data.id).navn === "Slop Lars");
+await admin("/billeder/" + fbx.data.id, "PATCH", { titel: "Ny titel" });
+tjek("ret kun titlen skjuler ikke billedet", (await anon("/billeder")).data.some((x) => x.id === fbx.data.id && x.titel === "Ny titel"));
+const ar3 = (await admin("/arrangementer", "POST", { titel: "Sommerfest", dato: "2030-07-01", tilmelding: true })).data;
+await sql`delete from arrangement_tilmeldinger`;
+const g3 = klient(); let r3;
+for (let i = 0; i < 2; i++) r3 = await g3(`/arrangementer/${ar3.id}/tilmeld`, "POST", { navn: "Stor familie " + i, antal: 15 });
+tjek("højst 30 personer pr. afsender pr. arrangement", ok(r3) && (await g3(`/arrangementer/${ar3.id}/tilmeld`, "POST", { navn: "En til", antal: 1 })).status === 429);
+tjek("medlemmer er ikke omfattet af afsender-loftet", ok(await sl.k(`/arrangementer/${ar3.id}/tilmeld`, "POST", { navn: "Lars", antal: 2 })));
+const [{ kh }] = await sql`select kilde_hash kh from arrangement_tilmeldinger limit 1`;
+const { createHash } = await import("node:crypto");
+tjek("afsender gemmes som HMAC, ikke som simpel hash af IP", kh !== createHash("sha256").update("127.0.0.1|" + new Date().toISOString().slice(0, 10)).digest("hex") && kh !== createHash("sha256").update("::1|" + new Date().toISOString().slice(0, 10)).digest("hex"));
+tjek("ugyldig URL-kodning vælter ikke serveren", (await fetch(B + "/%")).status === 400 && (await fetch(B + "/api/mig")).status === 200);
 
 // Statiske filer beskyttet
 for (const sti of ["/api/index.js", "/tools/test.mjs", "/api/_skema.sql", "/package.json"]) {

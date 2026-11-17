@@ -1,4 +1,6 @@
 User-agent: *
 Disallow: /log-ind/
 Disallow: /administration/
+Disallow: /dokumenter/
+Disallow: /api/
 Sitemap: https://haderslevmarineforening.dk/sitemap.xml

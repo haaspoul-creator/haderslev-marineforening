@@ -21,6 +21,17 @@ Vercel-projektet er koblet til dette GitHub-repository:
 - Små tekstrettelser kan laves direkte på github.com: åbn filen, tryk på blyanten ✏️, ret teksten, og tryk **Commit changes**.
 - Ændrer I menu, adresse eller kontaktoplysninger i `tools/faelles.mjs`, så kør `node tools/faelles.mjs` bagefter, så alle sider opdateres.
 
+## Arbejdsgang med pull requests
+1. Lav en gren, fx `git switch -c ret-om-os`, og lav ændringerne. På github.com kan man vælge "Create a new branch for this commit" ved blyanten.
+2. Opret en pull request mod `main`. Så kører automatisk:
+   - **CI** (`.github/workflows/ci.yml`): syntakstjek, tjek af at menu og fod er ens på alle sider, `npm audit`, API- og rettighedstest mod PostgreSQL (`npm test`) og røgtest i Chromium på desktop og mobil (`npm run test:browser`).
+   - **CodeQL**: statisk sikkerhedsscanning af JavaScript.
+   - **Tjek af nye afhængigheder**: stopper afhængigheder med kendte alvorlige sårbarheder.
+   - **Vercel**: en prøveadresse med ændringen.
+3. Når alt er grønt, og ændringen er set igennem, flettes pull requesten. Vercel lægger `main` ud automatisk.
+
+Dependabot foreslår opdateringer af afhængigheder som pull requests.
+
 ## Drift på Vercel + Neon (gratis)
 1. Læg mappen på GitHub, og importer repositoriet på vercel.com (Add New → Project). Der er intet byggetrin.
 2. I Vercel-projektet: **Storage → Create Database → Neon (Postgres)**. Så sættes `DATABASE_URL` automatisk.

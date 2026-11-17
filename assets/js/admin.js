@@ -9,7 +9,7 @@ function visLink(navn, email, token) {
   const url = `${location.origin}/log-ind/?link=${token}`;
   $("#link-hvem").textContent = `Send dette link til ${navn} (${email}):`;
   $("#link-felt").value = url;
-  $("#mail-link").href = `mailto:${email}?subject=${encodeURIComponent("Din adgang til Haderslev Marineforenings hjemmeside")}&body=${encodeURIComponent(
+  $("#mail-link").href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Din adgang til Haderslev Marineforenings hjemmeside")}&body=${encodeURIComponent(
     `Hej ${navn}\n\nHer er dit personlige link til Haderslev Marineforenings hjemmeside. Åbn det, og vælg en adgangskode. Linket virker i 14 dage.\n\n${url}\n\nVenlig hilsen\nHaderslev Marineforening`)}`;
   $("#link-boks").hidden = false;
   $("#link-boks").scrollIntoView({ block: "nearest" });

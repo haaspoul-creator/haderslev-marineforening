@@ -11,7 +11,9 @@ const TYPER = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": 
 const SKJULT = /^\/(api|tools|node_modules|\.git)(\/|$)|\.(md|json|mjs)$/;
 
 http.createServer(async (req, res) => {
-  const sti = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  let sti;
+  try { sti = decodeURIComponent(new URL(req.url, "http://x").pathname); }
+  catch { res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("Ugyldig adresse"); }
   if (sti.startsWith("/api/")) return handler(req, res);
   try {
     if (SKJULT.test(sti)) throw 0;
