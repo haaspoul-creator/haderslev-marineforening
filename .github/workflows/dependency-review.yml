@@ -1,0 +1,34 @@
+# Stopper pull requests, der tilføjer afhængigheder med kendte, alvorlige sårbarheder.
+# Kræver at "Dependency graph" er slået til (Settings → Code security). Er den slået fra,
+# springes tjekket over med en advarsel; kendte sårbarheder fanges stadig af "npm audit" i CI.
+name: Afhængigheder
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Tjek af nye afhængigheder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Er Dependency graph slået til?
+        id: graf
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "til=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "til=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Dependency graph er slået fra::Tjekket af nye afhængigheder springes over. Slå 'Dependency graph' til under Settings → Code security, så kører det automatisk."
+          fi
+      - uses: actions/dependency-review-action@v4
+        if: steps.graf.outputs.til == 'true'
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
