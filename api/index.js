@@ -2,7 +2,7 @@
 // Kører som Vercel-funktion, eller lokalt/på egen server via tools/server.mjs.
 // Kræver miljøvariablen DATABASE_URL (eller STORAGE_URL / POSTGRES_URL fra Neon) (en almindelig PostgreSQL-forbindelse).
 import postgres from "postgres";
-import { randomBytes, scrypt as _scrypt, timingSafeEqual, createHash } from "node:crypto";
+import { randomBytes, scrypt as _scrypt, timingSafeEqual, createHash, createHmac } from "node:crypto";
 import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
 
@@ -50,12 +50,16 @@ function saetCookie(res, token, maxAge) {
 }
 
 async function laesBody(req) {
-  if (req.body !== undefined && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body; // Vercel
+  const objekt = (b) => { if (!b || typeof b !== "object" || Array.isArray(b)) throw new Fejl(400, "Ugyldig forespørgsel."); return b; };
+  if (req.body !== undefined && req.body !== null && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return objekt(req.body); // Vercel
+  if (req.body === null) throw new Fejl(400, "Ugyldig forespørgsel.");
   const dele = [];
   let str = 0;
   for await (const d of req) { str += d.length; if (str > 4_000_000) throw new Fejl(413, "Filen er for stor (højst ca. 3 MB)."); dele.push(d); }
   if (!dele.length) return {};
-  try { return JSON.parse(Buffer.concat(dele).toString("utf8")); } catch { throw new Fejl(400, "Ugyldig forespørgsel."); }
+  let b;
+  try { b = JSON.parse(Buffer.concat(dele).toString("utf8")); } catch { throw new Fejl(400, "Ugyldig forespørgsel."); }
+  return objekt(b);
 }
 
 const tekst = (v, maks, navn, kraevet = false) => {
@@ -65,12 +69,12 @@ const tekst = (v, maks, navn, kraevet = false) => {
   return s;
 };
 const dato = (v, navn = "dato") => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) throw new Fejl(400, `Udfyld ${navn}.`);
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Fejl(400, `Udfyld ${navn}.`);
   const [y, m, d] = v.split("-").map(Number), t = new Date(Date.UTC(y, m - 1, d));
   if (t.getUTCMonth() !== m - 1 || t.getUTCDate() !== d || y < 2000 || y > 2100) throw new Fejl(400, `Ugyldig ${navn}.`);
   return v;
 };
-const tid = (v) => (v ? (/^\d{2}:\d{2}$/.test(v) ? v : (() => { throw new Fejl(400, "Ugyldigt tidspunkt."); })()) : null);
+const tid = (v) => (v ? (typeof v === "string" && /^\d{2}:\d{2}$/.test(v) ? v : (() => { throw new Fejl(400, "Ugyldigt tidspunkt."); })()) : null);
 const ROLLER = ["admin", "medlem", "laeser"];
 
 async function hentBruger(req) {
@@ -118,20 +122,22 @@ rute("POST", "/opsaet", async ({ req, body }) => {
 // Login
 rute("GET", "/mig", async ({ bruger }) => ({ bruger }));
 
-rute("POST", "/log-ind", async ({ body, res }) => {
+rute("POST", "/log-ind", async ({ req, body, res }) => {
   const email = tekst(body.email, 200, "e-mail", true).toLowerCase();
+  // Forsøget registreres FØR koden tjekkes, så parallelle forsøg også tælles med.
+  // Spærringen gælder kun den afsender, der gætter – ikke selve kontoen – så ingen kan låse andre ude.
+  const k = kilde(req, "login");
+  const [forsoeg] = await sql`insert into login_forsoeg (kilde_hash, email) values (${k}, ${email}) returning id`;
+  const [{ konto, alle }] = await sql`select
+      count(*) filter (where email = ${email})::int konto, count(*)::int alle
+    from login_forsoeg where kilde_hash = ${k} and tid > now() - interval '15 minutes'`;
+  if (konto > 5 || alle > 30) throw new Fejl(429, "For mange forkerte forsøg. Vent 15 minutter, og prøv igen.");
   const [b] = await sql`select * from brugere where email = ${email}`;
-  if (b && b.fejl_antal >= 5 && b.fejl_tid > new Date(Date.now() - 15 * 60e3))
-    throw new Fejl(429, "For mange forkerte forsøg. Vent 15 minutter, og prøv igen.");
   const gyldig = await tjekKode(String(body.kode || ""), b ? b.kode_hash : null); // altid scrypt: ens svartid
-  if (!b || !gyldig) {
-    if (b) await sql`update brugere set fejl_antal = fejl_antal + 1, fejl_tid = now() where id = ${b.id}`;
-    throw new Fejl(401, "Forkert e-mail eller adgangskode.");
-  }
-  await sql`update brugere set fejl_antal = 0 where id = ${b.id}`;
+  if (!b || !gyldig) throw new Fejl(401, "Forkert e-mail eller adgangskode.");
+  await sql`delete from login_forsoeg where id = ${forsoeg.id} or (kilde_hash = ${k} and email = ${email})`;
   const token = nyToken();
   await sql`insert into sessioner (token_hash, bruger_id, udloeber) values (${hash(token)}, ${b.id}, now() + ${SESSION_DAGE + " days"}::interval)`;
-  await sql`delete from sessioner where udloeber < now()`;
   saetCookie(res, token, SESSION_DAGE * 86400);
   return { ok: true };
 });
@@ -172,6 +178,8 @@ rute("PATCH", "/mig", async ({ bruger, body }) => {
 });
 rute("POST", "/mig/kode", async ({ req, bruger, body }) => {
   kraevLogin(bruger);
+  const [b] = await sql`select kode_hash from brugere where id = ${bruger.id}`;
+  if (!(await tjekKode(String(body.nuvaerende || ""), b.kode_hash))) throw new Fejl(403, "Din nuværende adgangskode er forkert.");
   const kode = kodeKrav(String(body.kode || ""));
   await sql`update brugere set kode_hash = ${await hashKode(kode)} where id = ${bruger.id}`;
   await sql`delete from sessioner where bruger_id = ${bruger.id} and token_hash <> ${hash(laesCookie(req))}`; // log andre enheder ud
@@ -204,30 +212,45 @@ rute("POST", "/arrangementer", async ({ bruger, body }) => {
 rute("PATCH", "/arrangementer/:id", async ({ bruger, body, p }) => {
   kraevAdmin(bruger);
   const maks = maksTal(body.max_antal);
-  if (maks) {
-    const [{ sum }] = await sql`select coalesce(sum(antal), 0)::int sum from arrangement_tilmeldinger where arrangement_id = ${p.id}`;
-    if (maks < sum) throw new Fejl(400, `Der er allerede ${sum} tilmeldt. Maks. antal skal være mindst ${sum}.`);
-  }
-  const r = await sql`update arrangementer set titel = ${tekst(body.titel, 120, "titel", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
+  const r = await sql.begin(async (tx) => {
+    await tx`select id from arrangementer where id = ${p.id} for update`;
+    if (maks) {
+      const [{ sum }] = await tx`select coalesce(sum(antal), 0)::int sum from arrangement_tilmeldinger where arrangement_id = ${p.id}`;
+      if (maks < sum) throw new Fejl(400, `Der er allerede ${sum} tilmeldt. Maks. antal skal være mindst ${sum}.`);
+    }
+    return tx`update arrangementer set titel = ${tekst(body.titel, 120, "titel", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
     sted = ${tekst(body.sted, 120, "sted")}, beskrivelse = ${tekst(body.beskrivelse, 1000, "beskrivelse")},
     tilmelding = ${ja(body.tilmelding)}, max_antal = ${maks} where id = ${p.id}`;
+  });
   if (!r.count) throw new Fejl(404, "Arrangementet findes ikke længere.");
   return { ok: true };
 });
 
 // Tilmelding til arrangementer – åben for alle, også uden login.
-const kilde = (req) => hash(String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").split(",")[0].trim() + "|" + new Date().toISOString().slice(0, 10));
+// Afsenderens adresse bruges kun til værn mod misbrug og gemmes som HMAC (kan ikke vendes uden den hemmelige nøgle).
+// x-forwarded-for stoles kun på, når siden kører på Vercel (som selv sætter den).
+const KILDE_NOEGLE = process.env.KILDE_NOEGLE || DB_URL || "lokal";
+function afsender(req) {
+  let ip = String(process.env.VERCEL ? (req.headers["x-vercel-forwarded-for"] || req.headers["x-forwarded-for"] || "") : "").split(",")[0].trim()
+    || String(req.socket?.remoteAddress || "");
+  if (ip.includes(":") && !ip.startsWith("::ffff:")) ip = ip.split(":").slice(0, 4).join(":") + "::/64"; // IPv6: hele /64-nettet
+  return ip.replace(/^::ffff:/, "");
+}
+const kilde = (req, salt = new Date().toISOString().slice(0, 10)) => createHmac("sha256", KILDE_NOEGLE).update(afsender(req) + "|" + salt).digest("hex");
 rute("POST", "/arrangementer/:id/tilmeld", async ({ req, bruger, body, p }) => {
   if (body.hjemmeside) throw new Fejl(400, "Tilmeldingen blev afvist."); // skjult felt – udfyldes kun af robotter
   const navn = tekst(body.navn, 80, "dit navn", true);
   const antal = Number(body.antal);
   if (!Number.isInteger(antal) || antal < 1 || antal > 20) throw new Fejl(400, "Antal personer skal være mellem 1 og 20.");
   const k = kilde(req);
-  const [{ seneste }] = await sql`select count(*)::int seneste from arrangement_tilmeldinger where kilde_hash = ${k} and oprettet > now() - interval '1 hour'`;
-  if (seneste >= 15) throw new Fejl(429, "Der er kommet mange tilmeldinger herfra. Prøv igen om lidt, eller kontakt bestyrelsen.");
   const token = nyToken();
   const ny = await sql.begin(async (tx) => {
     const [a] = await tx`select titel, tilmelding, max_antal, dato >= current_date aktuel from arrangementer where id = ${p.id} for update`;
+    const [{ seneste, herfra }] = await tx`select count(*) filter (where oprettet > now() - interval '1 hour')::int seneste,
+        coalesce(sum(antal) filter (where arrangement_id = ${p.id}), 0)::int herfra
+      from arrangement_tilmeldinger where kilde_hash = ${k}`;
+    if (!bruger && seneste >= 10) throw new Fejl(429, "Der er kommet mange tilmeldinger herfra. Prøv igen om lidt, eller kontakt bestyrelsen.");
+    if (!bruger && herfra + antal > 30) throw new Fejl(429, "Der er allerede tilmeldt mange herfra. Kontakt bestyrelsen, hvis I er flere.");
     if (!a) throw new Fejl(404, "Arrangementet findes ikke længere.");
     if (!a.aktuel) throw new Fejl(400, "Arrangementet er overstået.");
     if (!a.tilmelding) throw new Fejl(400, "Der er ikke tilmelding til dette arrangement.");
@@ -283,10 +306,13 @@ const pladsTal = (v) => {
 rute("PATCH", "/vagter/:id", async ({ bruger, body, p }) => {
   kraevAdmin(bruger);
   const pladser = pladsTal(body.pladser);
-  const [{ antal }] = await sql`select count(*)::int antal from tilmeldinger where vagt_id = ${p.id}`;
-  if (pladser < antal) throw new Fejl(400, `Der er allerede ${antal} tilmeldt. Fjern nogen først, eller vælg mindst ${antal} pladser.`);
-  const r = await sql`update vagter set titel = ${tekst(body.titel, 120, "vagt", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
+  const r = await sql.begin(async (tx) => {
+    await tx`select id from vagter where id = ${p.id} for update`;
+    const [{ antal }] = await tx`select count(*)::int antal from tilmeldinger where vagt_id = ${p.id}`;
+    if (pladser < antal) throw new Fejl(400, `Der er allerede ${antal} tilmeldt. Fjern nogen først, eller vælg mindst ${antal} pladser.`);
+    return tx`update vagter set titel = ${tekst(body.titel, 120, "vagt", true)}, dato = ${dato(body.dato)}, tid = ${tid(body.tid)},
     sted = ${tekst(body.sted, 120, "sted")}, pladser = ${pladser} where id = ${p.id}`;
+  });
   if (!r.count) throw new Fejl(404, "Vagten findes ikke længere.");
   return { ok: true };
 });
@@ -339,16 +365,20 @@ rute("DELETE", "/beskeder/:id", async ({ bruger, p }) => {
 });
 
 // Nyheder (offentlige)
-rute("GET", "/nyheder", async () => sql`
-  select id, titel, tekst, dato::text, case when pdf is not null then '/api/nyheder/' || id || '/pdf' else pdf_url end pdf_url
+// PDF'er markeret "kun for medlemmer" kan kun hentes af brugere, der er logget ind.
+rute("GET", "/nyheder", async ({ bruger }) => sql`
+  select id, titel, tekst, dato::text, kun_medlemmer, (pdf is not null or pdf_url is not null) har_pdf,
+    case when kun_medlemmer and ${!bruger} then null
+         when pdf is not null then '/api/nyheder/' || id || '/pdf' else pdf_url end pdf_url
   from nyheder order by dato desc, id desc limit 20`);
-rute("GET", "/nyheder/:id/pdf", async ({ p, res }) => {
-  const [n] = await sql`select pdf, pdf_navn from nyheder where id = ${p.id} and pdf is not null`;
+rute("GET", "/nyheder/:id/pdf", async ({ bruger, p, res }) => {
+  const [n] = await sql`select pdf, pdf_navn, kun_medlemmer from nyheder where id = ${p.id} and pdf is not null`;
   if (!n) throw new Fejl(404, "Filen findes ikke.");
+  if (n.kun_medlemmer && !bruger) throw new Fejl(401, "Log ind for at læse dette dokument.");
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `inline; filename="${(n.pdf_navn || "dokument.pdf").replace(/[^\w.-]/g, "_")}"`);
-  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Cache-Control", n.kun_medlemmer ? "private, no-store" : "public, max-age=3600");
   res.setHeader("Content-Security-Policy", "sandbox"); // indhold i PDF'en kan ikke køre som en del af siden
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.end(n.pdf);
@@ -362,8 +392,8 @@ rute("POST", "/nyheder", async ({ bruger, body }) => {
     if (pdf.subarray(0, 4).toString() !== "%PDF") throw new Fejl(400, "Filen skal være en PDF.");
     if (pdf.length > 3.2 * 1024 * 1024) throw new Fejl(413, "PDF'en er for stor. Den må højst fylde 3 MB.");
   }
-  await sql`insert into nyheder (titel, tekst, dato, pdf, pdf_navn) values (
-    ${tekst(body.titel, 160, "overskrift", true)}, ${tekst(body.tekst, 5000, "tekst")}, ${dato(body.dato)}, ${pdf}, ${pdf ? tekst(body.pdf_navn, 120, "filnavn") : null})`;
+  await sql`insert into nyheder (titel, tekst, dato, kun_medlemmer, pdf, pdf_navn) values (
+    ${tekst(body.titel, 160, "overskrift", true)}, ${tekst(body.tekst, 5000, "tekst")}, ${dato(body.dato)}, ${ja(body.kun_medlemmer)}, ${pdf}, ${pdf ? tekst(body.pdf_navn, 120, "filnavn") : null})`;
   return { ok: true };
 });
 rute("DELETE", "/nyheder/:id", async ({ bruger, p }) => { kraevAdmin(bruger); await sql`delete from nyheder where id = ${p.id}`; return { ok: true }; });
@@ -376,7 +406,7 @@ rute("GET", "/medlemmer", async ({ bruger }) => {
 rute("POST", "/medlemmer", async ({ bruger, body }) => {
   kraevAdmin(bruger);
   const email = tekst(body.email, 200, "e-mail", true).toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Fejl(400, "Skriv en gyldig e-mail.");
+  if (!/^[^@\s?&#/\\]+@[^@\s?&#/\\]+\.[^@\s?&#/\\]+$/.test(email)) throw new Fejl(400, "Skriv en gyldig e-mail.");
   const rolle = ROLLER.includes(body.rolle) ? body.rolle : "medlem";
   const [b] = await sql`insert into brugere (email, navn, rolle) values (${email}, ${tekst(body.navn, 80, "navn", true)}, ${rolle})
     on conflict (email) do nothing returning id`;
@@ -443,7 +473,8 @@ rute("DELETE", "/forslag/:id", async ({ bruger, p }) => {
 // Billeder i galleriet. Billederne gøres mindre i browseren (JPEG, uden metadata) før upload.
 const erJpeg = (b) => b.length > 4 && b[0] === 0xff && b[1] === 0xd8 && b[b.length - 2] === 0xff && b[b.length - 1] === 0xd9;
 rute("GET", "/billeder", async ({ bruger }) => sql`
-  select b.id, b.titel, b.alt, b.dato::text, b.godkendt, b.bredde, b.hoejde, b.oprettet, b.bruger_id, u.navn
+  select b.id, b.titel, b.alt, b.dato::text, b.godkendt, b.bredde, b.hoejde, b.oprettet,
+    case when ${!!bruger} then b.bruger_id end bruger_id, case when ${!!bruger} then u.navn end navn
   from billeder b left join brugere u on u.id = b.bruger_id
   where b.godkendt or ${bruger?.rolle === "admin"} or (${bruger ? bruger.id : null}::bigint is not null and b.bruger_id = ${bruger ? bruger.id : null}::bigint)
   order by coalesce(b.dato, b.oprettet::date) desc, b.id desc limit 300`);
@@ -465,7 +496,8 @@ rute("POST", "/billeder", async ({ bruger, body }) => {
 });
 rute("PATCH", "/billeder/:id", async ({ bruger, body, p }) => {
   kraevAdmin(bruger);
-  const r = await sql`update billeder set godkendt = ${!!body.godkendt},
+  const godkendt = body.godkendt === undefined ? null : body.godkendt === true;
+  const r = await sql`update billeder set godkendt = coalesce(${godkendt}::boolean, godkendt),
     titel = coalesce(${body.titel === undefined ? null : tekst(body.titel, 120, "billedteksten", true)}, titel),
     alt = coalesce(${body.alt === undefined ? null : tekst(body.alt, 300, "beskrivelsen", true)}, alt) where id = ${p.id}`;
   if (!r.count) throw new Fejl(404, "Billedet findes ikke længere.");
@@ -488,7 +520,7 @@ for (const str of ["stor", "lille"]) {
     if (!maa) throw new Fejl(404, "Billedet findes ikke.");
     res.statusCode = 200;
     res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader("Cache-Control", b.godkendt ? "public, max-age=86400" : "private, no-store");
+    res.setHeader("Cache-Control", b.godkendt ? "public, max-age=600" : "private, no-store"); // kort cache, så et skjult billede hurtigt forsvinder
     res.setHeader("Content-Security-Policy", "sandbox");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.end(b.data);
@@ -516,6 +548,7 @@ rute("POST", "/slopkisten/bestil", async ({ bruger, body }) => {
   if (!linjer.length) throw new Fejl(400, "Kurven er tom.");
   if (linjer.length > 30) throw new Fejl(400, "Højst 30 forskellige varer pr. bestilling.");
   const rene = linjer.map((l) => {
+    if (!l || typeof l !== "object") throw new Fejl(400, "Ugyldig bestilling.");
     const v = SLOP_VARER.get(String(l.vare));
     const variant = v && v.varianter[Number(l.variant)];
     const antal = Number(l.antal);
@@ -526,7 +559,7 @@ rute("POST", "/slopkisten/bestil", async ({ bruger, body }) => {
   // Navn, e-mail og telefon skal altid opgives, så slopbestyreren kan kontakte den, der har bestilt.
   const navn = tekst(body.navn, 80, "dit navn", true);
   const email = tekst(body.email, 200, "din e-mail", true).toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Fejl(400, "Skriv en gyldig e-mail.");
+  if (!/^[^@\s?&#/\\]+@[^@\s?&#/\\]+\.[^@\s?&#/\\]+$/.test(email)) throw new Fejl(400, "Skriv en gyldig e-mail.");
   const telefon = tekst(body.telefon, 30, "dit telefonnummer", true);
   const cifre = telefon.replace(/[\s+()-]/g, "");
   if (!/^\d{8,15}$/.test(cifre)) throw new Fejl(400, "Skriv et gyldigt telefonnummer (mindst 8 cifre).");
@@ -567,8 +600,9 @@ const SKEMA_HASH = hash(SKEMA);
 let skemaKlar = null;
 const sikrSkema = () => (skemaKlar ||= (async () => {
   const [{ t }] = await sql`select to_regclass('public.skema_version') t`;
-  if (t) { const [v] = await sql`select hash from skema_version limit 1`; if (v && v.hash === SKEMA_HASH) return; }
-  await sql.begin(async (tx) => {
+  let opdateret = false;
+  if (t) { const [v] = await sql`select hash from skema_version limit 1`; opdateret = !!v && v.hash === SKEMA_HASH; }
+  if (!opdateret) await sql.begin(async (tx) => {
     await tx`select pg_advisory_xact_lock(91374)`;
     await tx.unsafe("create table if not exists skema_version (hash text not null)");
     const [v] = await tx`select hash from skema_version limit 1`;
@@ -577,6 +611,12 @@ const sikrSkema = () => (skemaKlar ||= (async () => {
     await tx`delete from skema_version`;
     await tx`insert into skema_version (hash) values (${SKEMA_HASH})`;
   });
+  // Dataminimering (ved hver opstart): slet gamle data, der ikke længere skal bruges.
+  await sql`delete from login_forsoeg where tid < now() - interval '1 day'`;
+  await sql`delete from sessioner where udloeber < now()`;
+  await sql`delete from links where udloeber < now()`;
+  await sql`delete from arrangement_tilmeldinger t using arrangementer a where a.id = t.arrangement_id and a.dato < current_date - 90`;
+  await sql`delete from slop_bestillinger where status in ('udleveret', 'annulleret') and opdateret < now() - interval '2 years'`;
 })().catch((e) => { skemaKlar = null; throw e; }));
 
 export default async function handler(req, res) {

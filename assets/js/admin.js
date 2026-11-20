@@ -9,7 +9,7 @@ function visLink(navn, email, token) {
   const url = `${location.origin}/log-ind/?link=${token}`;
   $("#link-hvem").textContent = `Send dette link til ${navn} (${email}):`;
   $("#link-felt").value = url;
-  $("#mail-link").href = `mailto:${email}?subject=${encodeURIComponent("Din adgang til Haderslev Marineforenings hjemmeside")}&body=${encodeURIComponent(
+  $("#mail-link").href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Din adgang til Haderslev Marineforenings hjemmeside")}&body=${encodeURIComponent(
     `Hej ${navn}\n\nHer er dit personlige link til Haderslev Marineforenings hjemmeside. Åbn det, og vælg en adgangskode. Linket virker i 14 dage.\n\n${url}\n\nVenlig hilsen\nHaderslev Marineforening`)}`;
   $("#link-boks").hidden = false;
   $("#link-boks").scrollIntoView({ block: "nearest" });
@@ -85,7 +85,7 @@ async function hentNyheder() {
   if (!data.length) ul.append(h("li", { class: "muted" }, "Ingen nyheder endnu."));
   for (const n of data) {
     ul.append(h("li", {}, h("b", {}, n.titel), " · ", h("span", { class: "muted" }, fmtDatoLang(n.dato)),
-      n.pdf_url ? [" · ", h("a", { href: n.pdf_url }, "PDF")] : null, " · ",
+      n.pdf_url ? [" · ", h("a", { href: n.pdf_url }, "PDF"), n.kun_medlemmer ? h("span", { class: "muted" }, " (kun medlemmer)") : null] : null, " · ",
       sletKnap({ tekst: "Slet", klasse: "linkknap lille", label: `Slet nyheden ${n.titel}`,
         vedSlet: async () => {
           try { await api("/nyheder/" + n.id, { metode: "DELETE" }); visStatus(status, "Nyheden er slettet.", "ok"); hentNyheder(); }
@@ -111,7 +111,7 @@ $("#ny-nyhed").addEventListener("submit", async (e) => {
     if (fil && fil.size > 3 * 1024 * 1024) throw new Error("PDF'en er for stor. Den må højst fylde 3 MB.");
     await api("/nyheder", { metode: "POST", data: {
       titel: f.titel.value, tekst: f.tekst.value, dato: f.dato.value || idagISO(),
-      pdf: fil ? await tilBase64(fil) : null, pdf_navn: fil ? fil.name : null } });
+      pdf: fil ? await tilBase64(fil) : null, pdf_navn: fil ? fil.name : null, kun_medlemmer: f.kun_medlemmer.checked } });
     visStatus(status, "Nyheden er offentliggjort på forsiden.", "ok");
     f.reset(); f.dato.value = idagISO();
     hentNyheder();

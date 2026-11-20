@@ -83,8 +83,12 @@ async function afmeld(a, t) {
   try {
     await api(`/arrangementer/${a.id}/tilmeldinger/${t.id}`, { metode: "DELETE", data: { token: t.token || "" } });
     visStatus(status, `${t.navn} er afmeldt "${a.titel}".`, "ok");
-  } catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
-  const o = egne(); delete o[t.id]; gemEgne(o);
+    const o = egne(); delete o[t.id]; gemEgne(o);
+  } catch (e) {
+    visStatus(status, fejlTekst(e), "fejl");
+    // Kun hvis tilmeldingen ikke findes længere, glemmes den. Ved netværksfejl beholdes nøglen, så man kan prøve igen.
+    if (e.status === 403 || e.status === 404) { const o = egne(); delete o[t.id]; gemEgne(o); }
+  }
   hent();
 }
 

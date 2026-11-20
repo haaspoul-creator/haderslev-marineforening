@@ -152,5 +152,17 @@ create table if not exists slop_linjer (
 );
 create index if not exists slop_linjer_best on slop_linjer (bestilling_id);
 
+-- Login-forsøg (til at bremse gætteri pr. afsender uden at låse kontoen for andre)
+create table if not exists login_forsoeg (
+  id         bigint generated always as identity primary key,
+  kilde_hash text not null,
+  email      text not null,
+  tid        timestamptz not null default now()
+);
+create index if not exists login_forsoeg_kilde on login_forsoeg (kilde_hash, tid);
+
 -- Ankerposten indeholder persondata og er fjernet fra den offentlige side.
 update nyheder set pdf_url = null where pdf_url = '/dokumenter/ankerposten-2026-3.pdf';
+
+-- Nyheder/PDF'er kan gøres "kun for medlemmer" (fx Ankerposten med fødselsdage og telefonnumre)
+alter table nyheder add column if not exists kun_medlemmer boolean not null default false;

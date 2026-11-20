@@ -14,7 +14,7 @@ export async function api(sti, { metode = "GET", data } = {}) {
     throw new Error("Ingen forbindelse. Tjek internettet, og prøv igen.");
   }
   const json = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(json.fejl || "Der skete en fejl. Prøv igen.");
+  if (!r.ok) throw Object.assign(new Error(json.fejl || "Der skete en fejl. Prøv igen."), { status: r.status });
   return json;
 }
 

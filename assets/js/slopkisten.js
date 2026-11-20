@@ -64,7 +64,9 @@ function mineOversigt() {
 
 function visKurv() {
   const el = $("#kurv-indhold");
-  const k = laesKurv().filter((l) => vareFor(l.vare)?.varianter[l.variant]);
+  const alle = laesKurv();
+  const k = alle.filter((l) => vareFor(l.vare)?.varianter[l.variant]);
+  if (katalog.varer.length && k.length !== alle.length) { gemKurv(k); return; } // ryd udgåede varer ud af kurven
   const n = k.reduce((s, l) => s + l.antal, 0);
   $("#kurv-antal").hidden = !n; $("#kurv-antal").textContent = n;
   $("#kurv-knap").hidden = !n; $("#kurv-knap-antal").textContent = `(${n})`;
@@ -122,7 +124,7 @@ async function sendBestilling(e) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return vis(f.email, "Skriv en gyldig e-mail.");
   if (!/^\d{8,15}$/.test(telefon.replace(/[\s+()-]/g, ""))) return vis(f.telefon, "Skriv dit telefonnummer (mindst 8 cifre).");
   knap.disabled = true; knap.textContent = "Bestiller …";
-  const kurv = laesKurv();
+  const kurv = laesKurv().filter((l) => vareFor(l.vare)?.varianter[l.variant]); // varer, der er udgået af kataloget, sendes ikke med
   try {
     const r = await api("/slopkisten/bestil", { metode: "POST", data: { linjer: kurv, navn, email, telefon, bemaerkning: f.bemaerkning.value } });
     try { localStorage.setItem("hmf_slop_telefon", telefon); } catch { /* privat vindue */ }
@@ -194,7 +196,7 @@ function bestillingsKort(b, admin) {
       h("span", { class: `status-maerke slop-${b.status}` }, STATUS[b.status])),
     admin ? h("dl", { class: "medlemsinfo" },
       h("dt", {}, "Medlem"), h("dd", {}, b.navn),
-      h("dt", {}, "E-mail"), h("dd", {}, h("a", { href: "mailto:" + b.email }, b.email)),
+      h("dt", {}, "E-mail"), h("dd", {}, h("a", { href: "mailto:" + encodeURIComponent(b.email) }, b.email)),
       h("dt", {}, "Telefon"), h("dd", {}, b.telefon ? h("a", { href: "tel:" + b.telefon.replace(/\s/g, "") }, b.telefon) : "–")) : null,
     h("table", { class: "tabel linjer" },
       h("thead", {}, h("tr", {}, ["Varenr.", "Vare", "Størrelse", "Antal"].map((k) => h("th", { scope: "col" }, k)))),
