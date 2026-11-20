@@ -684,3 +684,16 @@ table.oversigt { width: 100%; border-collapse: collapse; font-size: 15px; }
   .vagtliste .pladser { font-size: 9pt; color: #333; }
   .print-fod { margin-top: 14px; font-size: 9pt; color: #333; }
 }
+
+/* Glemt adgangskode / velkommen via login-link */
+.glemt { margin-top: 18px; }
+.glemt h2 { font-size: 20px; }
+.ok-tekst { color: var(--ok) !important; font-size: 19px; }
+
+/* Login-link: anmodninger og send-vindue */
+.anmodninger { margin-bottom: 22px; box-shadow: 0 0 0 3px var(--orange), var(--sh); }
+.anmodning { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; }
+.anm-knapper { display: flex; align-items: center; gap: 12px; }
+.send-knapper { display: grid; gap: 10px; margin: 16px 0 6px; }
+.send-knapper .btn { justify-content: center; font-size: 17px; min-height: 52px; }
+.anm-tal { background: var(--orange); color: var(--moerk); margin-left: 4px; }

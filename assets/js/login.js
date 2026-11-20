@@ -1,4 +1,4 @@
-// Log ind, vælg adgangskode via personligt link (invitation eller glemt kode), og "Min profil".
+// Log ind, login-link (logger direkte ind), "Glemt adgangskode?" og "Min profil".
 import { api, $, visStatus, fejlTekst, hentBruger, logUd } from "./app.js";
 
 const status = $("#status");
@@ -26,18 +26,58 @@ let tilstand = "link"; // "link" | "skift"
     // Fjern koden fra adresselinjen, så den ikke gemmes i historikken.
     history.replaceState(null, "", "/log-ind/");
     try {
-      const l = await api("/link", { metode: "POST", data: { token: linkToken } });
-      $("#ny-kode-titel").textContent = `Velkommen, ${l.navn}!`;
-      $("#ny-kode-intro").textContent = `Vælg en adgangskode til ${l.email}. Du kan også rette dit navn, som de andre medlemmer ser det.`;
-      $("#ny-navn").value = l.navn;
-      $("#navn-felt").hidden = false;
-      vis("trin-ny-kode");
+      const l = await api("/link/log-ind", { metode: "POST", data: { token: linkToken } });
+      visVelkommen(l);
     } catch (e) { visStatus(status, fejlTekst(e), "fejl"); vis("trin-login"); }
     return;
   }
   const b = await hentBruger();
   if (b) visProfil(b); else vis("trin-login");
 })();
+
+// Efter login via link: man er logget ind. En ny adgangskode er frivillig (men foreslås for nye medlemmer).
+function visVelkommen(l) {
+  $("#vk-titel").textContent = `Velkommen, ${l.navn}!`;
+  if (!l.har_kode) {
+    $("#vk-spoerg").textContent = "Vælg en adgangskode";
+    $("#vk-hjaelp").textContent = "Så kan du logge ind igen uden link. Du kan også springe over og bare bruge et nyt login-link næste gang.";
+    $("#vk-navn-felt").hidden = false;
+    $("#vk-navn").value = l.navn;
+  }
+  $("#vk-spring").href = tilbageTil() === "/" ? "/vagter/" : tilbageTil();
+  vis("trin-velkommen");
+}
+
+$("#vk-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.kode1.value.length < 8) { visStatus(status, "Adgangskoden skal være mindst 8 tegn – eller tryk \"Spring over\".", "fejl"); f.kode1.focus(); return; }
+  if (f.kode1.value !== f.kode2.value) { visStatus(status, "De to adgangskoder er ikke ens.", "fejl"); f.kode2.focus(); return; }
+  try {
+    if (!$("#vk-navn-felt").hidden && f.navn.value.trim()) await api("/mig", { metode: "PATCH", data: { navn: f.navn.value } });
+    await api("/mig/kode", { metode: "POST", data: { kode: f.kode1.value } });
+    visStatus(status, "Din adgangskode er gemt.", "ok");
+    setTimeout(() => { location.href = $("#vk-spring").getAttribute("href"); }, 1000);
+  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); }
+});
+
+$("#glemt-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const email = f.email.value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { visStatus(status, "Skriv din e-mail.", "fejl"); f.email.focus(); return; }
+  const knap = f.querySelector("button[type=submit]");
+  knap.disabled = true;
+  try {
+    await api("/glemt", { metode: "POST", data: { email } });
+    f.hidden = true;
+    $("#glemt-tak").hidden = false;
+    visStatus(status, "");
+  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); knap.disabled = false; }
+});
+// Udfyld e-mail i "glemt"-feltet med det, man har skrevet i login-feltet
+$("#login-email").addEventListener("input", (e) => { if (!$("#glemt-email").dataset.rettet) $("#glemt-email").value = e.target.value; });
+$("#glemt-email").addEventListener("input", (e) => { e.target.dataset.rettet = "1"; });
 
 function visProfil(b) {
   $("#profil-navn").value = b.navn;
@@ -54,7 +94,10 @@ $("#login-form").addEventListener("submit", async (e) => {
   try {
     await api("/log-ind", { metode: "POST", data: { email: f.email.value, kode: f.kode.value } });
     location.href = tilbageTil();
-  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); knap.disabled = false; }
+  } catch (err) {
+    visStatus(status, fejlTekst(err) + (err.status === 401 ? " Har du glemt den? Brug \"Glemt adgangskode?\" herunder." : ""), "fejl");
+    knap.disabled = false;
+  }
 });
 
 $("#ny-kode-form").addEventListener("submit", async (e) => {

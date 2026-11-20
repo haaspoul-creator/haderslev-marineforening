@@ -116,6 +116,41 @@ try {
   await m.goto(B + "/slopkisten/");
   await m.waitForSelector("#admin-bestillinger .bestilling");
   tjek("admin ser slopkiste-bestillingen", (await m.textContent("#admin-bestillinger")).includes("Anna Andersen"));
+
+  // Glemt adgangskode: medlem beder om link -> admin sender med ét tryk -> linket logger ind
+  const glemt = await side();
+  await glemt.goto(B + "/log-ind/");
+  await glemt.fill("#glemt-email", "bent@test.dk");
+  await glemt.click("#glemt-form button[type=submit]");
+  await glemt.waitForSelector("#glemt-tak:not([hidden])");
+  tjek("medlem kan bede om et login-link", true);
+  await m.goto(B + "/");
+  await m.waitForSelector(".anm-tal", { state: "attached" });
+  tjek("admin ser et tal i menuen", (await m.textContent(".konto summary")).includes("1"));
+  await m.goto(B + "/administration/");
+  await m.waitForSelector("#anmodninger:not([hidden])");
+  tjek("anmodningen står øverst under Administration", (await m.textContent("#anmodninger")).includes("Bent Bentsen"));
+  await m.click("#anm-liste button.btn");
+  await m.waitForSelector("dialog#link-boks[open]");
+  const link = await m.inputValue("#link-felt");
+  const mail = decodeURIComponent(await m.getAttribute("#mail-link", "href"));
+  const sms = decodeURIComponent(await m.getAttribute("#sms-link", "href"));
+  tjek("vinduet har mail, SMS og kopier med linket", mail.startsWith("mailto:bent@test.dk") && mail.includes(link) && sms.includes(link));
+  await glemt.goto(link);
+  await glemt.waitForSelector("#trin-velkommen:not([hidden])");
+  tjek("linket logger direkte ind", (await glemt.textContent("#vk-titel")).includes("Bent Bentsen") && !glemt.url().includes("link="));
+  await glemt.fill("#vk-kode1", "BentsNyeKode1");
+  await glemt.fill("#vk-kode2", "BentsNyeKode1");
+  await glemt.click("#vk-form button[type=submit]");
+  await glemt.waitForURL(/vagter/);
+  tjek("ny adgangskode kan vælges uden den gamle", true);
+  const igen = await side();
+  await igen.goto(B + "/log-ind/");
+  await igen.fill("#login-email", "bent@test.dk");
+  await igen.fill("#login-kode", "BentsNyeKode1");
+  await igen.click("#login-form button[type=submit]");
+  await igen.waitForURL(B + "/");
+  tjek("den nye adgangskode virker", true);
 } catch (e) {
   console.error("FEJL undervejs:", e.message.split("\n")[0]);
   fejl++;

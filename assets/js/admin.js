@@ -5,22 +5,64 @@ const status = $("#status");
 let mig = null;
 const ROLLER = [["medlem", "Medlem"], ["admin", "Administrator"], ["laeser", "Skrivebeskyttet"]];
 
+// ---------- Send login-link (ét vindue med mail, SMS og kopier) ----------
+const vindue = h("dialog", { class: "vindue", id: "link-boks", "aria-labelledby": "link-hvem" });
+vindue.innerHTML = `
+  <div class="vindue-indhold">
+    <button class="vindue-luk" type="button" aria-label="Luk">×</button>
+    <p class="eyebrow">Login-link</p>
+    <h2 id="link-hvem"></h2>
+    <p class="muted" id="link-forklar">Vælg, hvordan linket skal sendes. Når modtageren trykker på linket, er vedkommende logget ind. Linket virker i 7 dage og kun én gang.</p>
+    <div class="send-knapper">
+      <a class="btn" id="mail-link" href="#">✉️ Send på mail</a>
+      <a class="btn" id="sms-link" href="#">💬 Send SMS</a>
+      <button class="btn alt" type="button" id="kopier">📋 Kopier link</button>
+    </div>
+    <label for="link-felt">Linket</label>
+    <input id="link-felt" readonly>
+  </div>`;
+document.body.append(vindue);
+vindue.querySelector(".vindue-luk").addEventListener("click", () => vindue.close());
+vindue.addEventListener("click", (e) => { if (e.target === vindue) vindue.close(); });
+
 function visLink(navn, email, token) {
   const url = `${location.origin}/log-ind/?link=${token}`;
-  $("#link-hvem").textContent = `Send dette link til ${navn} (${email}):`;
+  const tekst = `Hej ${navn}\n\nHer er dit login-link til Haderslev Marineforenings hjemmeside. Tryk på linket, så er du logget ind:\n\n${url}\n\nLinket virker i 7 dage og kun én gang.\n\nVenlig hilsen\nHaderslev Marineforening`;
+  $("#link-hvem").textContent = `Send login-link til ${navn}`;
   $("#link-felt").value = url;
-  $("#mail-link").href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Din adgang til Haderslev Marineforenings hjemmeside")}&body=${encodeURIComponent(
-    `Hej ${navn}\n\nHer er dit personlige link til Haderslev Marineforenings hjemmeside. Åbn det, og vælg en adgangskode. Linket virker i 14 dage.\n\n${url}\n\nVenlig hilsen\nHaderslev Marineforening`)}`;
-  $("#link-boks").hidden = false;
-  $("#link-boks").scrollIntoView({ block: "nearest" });
+  $("#mail-link").href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Dit login-link til Haderslev Marineforening")}&body=${encodeURIComponent(tekst)}`;
+  $("#sms-link").href = `sms:?&body=${encodeURIComponent(`Hej ${navn}. Her er dit login-link til Haderslev Marineforenings hjemmeside – tryk på det, så er du logget ind: ${url}`)}`;
+  if (!vindue.open) vindue.showModal();
   $("#link-felt").select();
 }
 $("#kopier").addEventListener("click", async () => {
   const felt = $("#link-felt");
   try { await navigator.clipboard.writeText(felt.value); } catch { felt.select(); document.execCommand("copy"); }
-  $("#kopier").textContent = "Kopieret!";
-  setTimeout(() => { $("#kopier").textContent = "Kopier link"; }, 2000);
+  $("#kopier").textContent = "✓ Kopieret!";
+  setTimeout(() => { $("#kopier").textContent = "📋 Kopier link"; }, 2000);
 });
+
+// ---------- Anmodninger om login-link ("Glemt adgangskode?") ----------
+async function hentAnmodninger() {
+  let data;
+  try { data = await api("/anmodninger"); } catch { return; }
+  $("#anmodninger").hidden = !data.length;
+  $("#anm-antal").textContent = data.length;
+  const ul = $("#anm-liste");
+  ul.textContent = "";
+  for (const a of data) {
+    const send = h("button", { class: "btn", type: "button", "aria-label": `Send login-link til ${a.navn}` }, "Send login-link");
+    send.addEventListener("click", async () => {
+      send.disabled = true;
+      try { const r = await api(`/anmodninger/${a.id}/link`, { metode: "POST" }); visLink(r.navn, r.email, r.token); hentAnmodninger(); }
+      catch (e) { visStatus(status, fejlTekst(e), "fejl"); send.disabled = false; }
+    });
+    ul.append(h("li", { class: "anmodning" },
+      h("div", {}, h("b", {}, a.navn), h("span", { class: "muted lille" }, ` · ${a.email} · ${new Date(a.oprettet).toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`)),
+      h("div", { class: "anm-knapper" }, send, sletKnap({ tekst: "Afvis", klasse: "linkknap lille", bekraeft: "Sikker? Tryk igen", label: `Afvis anmodningen fra ${a.navn}`,
+        vedSlet: async () => { try { await api(`/anmodninger/${a.id}`, { metode: "DELETE" }); hentAnmodninger(); } catch (e) { visStatus(status, fejlTekst(e), "fejl"); } } }))));
+  }
+}
 
 // ---------- Medlemmer ----------
 async function hentMedlemmer() {
@@ -37,7 +79,7 @@ async function hentMedlemmer() {
       try { await api("/medlemmer/" + p.id, { metode: "PATCH", data: { rolle: valg.value } }); visStatus(status, `${p.navn} er nu ${valg.selectedOptions[0].textContent.toLowerCase()}.`, "ok"); }
       catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
     });
-    const nytLink = h("button", { class: "btn sm alt", type: "button", "aria-label": `Lav nyt link til ${p.navn}` }, "Nyt link");
+    const nytLink = h("button", { class: "btn sm alt", type: "button", "aria-label": `Send login-link til ${p.navn}` }, "Login-link");
     nytLink.addEventListener("click", async () => {
       try { const r = await api(`/medlemmer/${p.id}/link`, { metode: "POST" }); visLink(p.navn, p.email, r.token); }
       catch (e) { visStatus(status, fejlTekst(e), "fejl"); }
@@ -68,7 +110,7 @@ $("#inviter").addEventListener("submit", async (e) => {
   knap.disabled = true;
   try {
     const r = await api("/medlemmer", { metode: "POST", data });
-    visStatus(status, `${data.navn.trim()} er oprettet. Send linket herunder til medlemmet.`, "ok");
+    visStatus(status, `${data.navn.trim()} er oprettet. Send login-linket på mail eller SMS.`, "ok");
     visLink(data.navn.trim(), data.email.trim().toLowerCase(), r.token);
     f.navn.value = ""; f.email.value = "";
     hentMedlemmer();
@@ -125,6 +167,7 @@ $("#ny-nyhed").addEventListener("submit", async (e) => {
   if (!erAdmin(mig)) { visStatus(status, "Denne side er kun for administratorer.", "fejl"); return; }
   $("#indhold").hidden = false;
   $("#ny-nyhed").dato.value = idagISO();
+  hentAnmodninger();
   hentMedlemmer();
   hentNyheder();
   // Billeder der venter på godkendelse

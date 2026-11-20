@@ -49,7 +49,39 @@
         <input id="login-kode" name="kode" type="password" autocomplete="current-password" required>
         <div class="form-handling"><button class="btn" type="submit">Log ind</button></div>
       </form>
-      <p class="muted lille" style="margin-top:16px"><b>Glemt adgangskode, eller har du ikke en konto?</b> Kontakt en fra bestyrelsen. Så får du et personligt link, hvor du vælger en ny adgangskode.</p>
+
+      <div class="kort glemt" id="glemt">
+        <h2>Glemt adgangskode?</h2>
+        <p>Skriv din e-mail, og tryk på knappen. Så sender bestyrelsen dig et <b>login-link</b> på mail eller SMS. Når du trykker på linket, er du logget ind.</p>
+        <form id="glemt-form" novalidate>
+          <label for="glemt-email" style="margin-top:0">Din e-mail</label>
+          <input id="glemt-email" name="email" type="email" autocomplete="email" required>
+          <div class="form-handling"><button class="btn alt" type="submit">Send mig et login-link</button></div>
+        </form>
+        <p class="note ok" id="glemt-tak" role="status" hidden><b>Tak!</b> Bestyrelsen har fået besked og sender dig et login-link. Tryk på linket, når du får det – så er du logget ind.</p>
+      </div>
+      <p class="muted lille" style="margin-top:16px">Har du ikke en konto? Kontakt en fra bestyrelsen, så får du et login-link.</p>
+    </section>
+
+    <section id="trin-velkommen" data-trin hidden>
+      <div class="sidehoved"><h1 id="vk-titel">Velkommen!</h1><p class="ok-tekst"><b>✓ Du er logget ind.</b></p></div>
+      <form class="kort" id="vk-form" novalidate>
+        <h2 id="vk-spoerg">Vil du vælge en ny adgangskode?</h2>
+        <p class="muted" id="vk-hjaelp">Det er frivilligt. Du kan altid få et nyt login-link, hvis du glemmer den.</p>
+        <div id="vk-navn-felt" hidden>
+          <label for="vk-navn">Dit navn, som de andre medlemmer ser det</label>
+          <input id="vk-navn" name="navn" autocomplete="name" maxlength="80">
+        </div>
+        <label for="vk-kode1">Ny adgangskode</label>
+        <input id="vk-kode1" name="kode1" type="password" autocomplete="new-password" minlength="8" aria-describedby="vk-kode-hjaelp">
+        <p class="hjaelp" id="vk-kode-hjaelp">Mindst 8 tegn.</p>
+        <label for="vk-kode2">Gentag adgangskode</label>
+        <input id="vk-kode2" name="kode2" type="password" autocomplete="new-password" minlength="8">
+        <div class="form-handling">
+          <button class="btn" type="submit">Gem adgangskode</button>
+          <a class="btn alt sm" id="vk-spring" href="/">Spring over</a>
+        </div>
+      </form>
     </section>
 
     <section id="trin-ny-kode" data-trin hidden>

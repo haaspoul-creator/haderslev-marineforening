@@ -333,6 +333,45 @@ const { createHash } = await import("node:crypto");
 tjek("afsender gemmes som HMAC, ikke som simpel hash af IP", kh !== createHash("sha256").update("127.0.0.1|" + new Date().toISOString().slice(0, 10)).digest("hex") && kh !== createHash("sha256").update("::1|" + new Date().toISOString().slice(0, 10)).digest("hex"));
 tjek("ugyldig URL-kodning vælter ikke serveren", (await fetch(B + "/%")).status === 400 && (await fetch(B + "/api/mig")).status === 200);
 
+// Login-link og "Glemt adgangskode?"
+const lm = await medlem("Link Lis", "linklis@test.dk");
+const lmId = (await lm.k("/mig")).data.bruger.id;
+const lnk = (await admin(`/medlemmer/${lmId}/link`, "POST")).data.token;
+const viaLink = klient();
+const ll = await viaLink("/link/log-ind", "POST", { token: lnk });
+tjek("login-link logger direkte ind", ok(ll) && ll.data.navn === "Link Lis" && (await viaLink("/mig")).data.bruger.email === "linklis@test.dk");
+tjek("login-link virker kun én gang", (await klient()("/link/log-ind", "POST", { token: lnk })).status === 404);
+tjek("ugyldigt link afvises", (await klient()("/link/log-ind", "POST", { token: "x".repeat(43) })).status === 404);
+tjek("efter login via link kan man vælge ny kode uden den gamle", ok(await viaLink("/mig/kode", "POST", { kode: "LinkKode123" })));
+tjek("...men kun én gang (bagefter kræves den gamle)", (await viaLink("/mig/kode", "POST", { kode: "AndenKode123" })).status === 403);
+tjek("andre enheder blev logget ud ved den nye kode", (await lm.k("/mig")).data.bruger === null);
+const lm2 = klient();
+tjek("den nye kode virker", ok(await lm2("/log-ind", "POST", { email: "linklis@test.dk", kode: "LinkKode123" })));
+tjek("en almindelig session kan IKKE skifte kode uden den gamle", (await lm2("/mig/kode", "POST", { kode: "Hack12345" })).status === 403);
+await sql`delete from login_forsoeg`;
+const g1 = await klient()("/glemt", "POST", { email: "linklis@test.dk" });
+const g2 = await klient()("/glemt", "POST", { email: "findes.ikke@test.dk" });
+tjek("'glemt adgangskode' svarer ens, uanset om e-mailen findes", ok(g1) && ok(g2) && JSON.stringify(g1.data) === JSON.stringify(g2.data));
+await klient()("/glemt", "POST", { email: "LinkLis@test.dk" });
+const anm = (await admin("/anmodninger")).data;
+tjek("bestyrelsen ser én anmodning (ingen dubletter, ingen for ukendte)", anm.length === 1 && anm[0].email === "linklis@test.dk");
+tjek("medlemmer kan IKKE se anmodninger", (await lm2("/anmodninger")).status === 403);
+tjek("anonyme kan IKKE se anmodninger", (await anon("/anmodninger")).status === 401);
+tjek("medlemmer kan IKKE lave links via anmodninger", (await lm2(`/anmodninger/${anm[0].id}/link`, "POST")).status === 403);
+const svar = await admin(`/anmodninger/${anm[0].id}/link`, "POST");
+tjek("admin laver login-link fra anmodningen med ét tryk", ok(svar) && svar.data.token && svar.data.email === "linklis@test.dk");
+tjek("anmodningen er besvaret bagefter", (await admin("/anmodninger")).data.length === 0);
+tjek("linket fra anmodningen logger ind", ok(await klient()("/link/log-ind", "POST", { token: svar.data.token })));
+for (let i = 0; i < 5; i++) await klient()("/glemt", "POST", { email: `spam${i}@test.dk` });
+tjek("'glemt adgangskode' kan ikke spammes", (await klient()("/glemt", "POST", { email: "spam9@test.dk" })).status === 429);
+await sql`delete from login_forsoeg`;
+tjek("nødlink er lukket uden den hemmelige kode", (await anon("/noedlink", "POST", { email: "admin@test.dk" })).status === 404
+  && (await anon("/noedlink", "POST", { email: "admin@test.dk" }, { "x-noedlink": "forkert".repeat(6) })).status === 404);
+if (process.env.NOEDLINK_KODE) {
+  tjek("nødlink virker med den rigtige kode for en administrator", ok(await anon("/noedlink", "POST", { email: "admin@test.dk" }, { "x-noedlink": process.env.NOEDLINK_KODE })));
+  tjek("nødlink virker IKKE for almindelige medlemmer", (await anon("/noedlink", "POST", { email: "linklis@test.dk" }, { "x-noedlink": process.env.NOEDLINK_KODE })).status === 404);
+}
+
 // Statiske filer beskyttet
 for (const sti of ["/api/index.js", "/tools/test.mjs", "/api/_skema.sql", "/package.json"]) {
   const r = await fetch(B + sti);
