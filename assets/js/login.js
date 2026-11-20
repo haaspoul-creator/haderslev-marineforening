@@ -29,27 +29,27 @@ let tilstand = "link"; // "link" | "skift"
     try { ejer = await api("/link", { metode: "POST", data: { token: linkToken } }); }
     catch (e) { visStatus(status, fejlTekst(e), "fejl"); vis("trin-login"); return; }
     if (!ejer.gyldig) {
-      // Linket er brugt – men er man allerede logget ind (fx trykket to gange), så gå bare videre.
-      if (await hentBruger()) { location.replace("/vagter/"); return; }
-      visStatus(status, "Linket er brugt eller for gammelt. Tryk \"Glemt adgangskode?\" herunder for at få et nyt.", "fejl");
-      vis("trin-login"); return;
+      const b = await hentBruger();
+      visStatus(status, "Linket er brugt eller for gammelt." + (b ? ` Du er logget ind som ${b.navn}.` : " Tryk \"Glemt adgangskode?\" herunder for at få et nyt."), "fejl");
+      if (b) visProfil(b); else vis("trin-login");
+      return;
     }
     // Vis en knap først: nogle mailprogrammer åbner links for at tjekke dem, og så må linket ikke blive brugt op.
     $("#lk-titel").textContent = `Hej ${ejer.navn}!`;
     $("#lk-knap").textContent = `Log ind som ${ejer.navn}`;
     $("#lk-knap").addEventListener("click", async () => {
       $("#lk-knap").disabled = true;
-      try { visVelkommen(await api("/link/log-ind", { metode: "POST", data: { token: linkToken } })); }
-      catch (e) {
-        if (await hentBruger()) { location.replace("/vagter/"); return; }
-        visStatus(status, fejlTekst(e), "fejl"); vis("trin-login");
-      }
+      try {
+        await api("/link/log-ind", { metode: "POST", data: { token: linkToken } });
+        location.replace("/log-ind/?velkommen"); // hel sideindlæsning, så menuen viser, at man er logget ind
+      } catch (e) { visStatus(status, fejlTekst(e), "fejl"); $("#lk-knap").disabled = false; }
     });
     vis("trin-link");
     return;
   }
   const b = await hentBruger();
-  if (b) visProfil(b); else vis("trin-login");
+  if (b && params.has("velkommen")) { history.replaceState(null, "", "/log-ind/"); visVelkommen(b); }
+  else if (b) visProfil(b); else vis("trin-login");
 })();
 
 // Efter login via link: man er logget ind. En ny adgangskode er frivillig (men foreslås for nye medlemmer).
@@ -75,7 +75,9 @@ $("#vk-form").addEventListener("submit", async (e) => {
     await api("/mig/kode", { metode: "POST", data: { kode: f.kode1.value } });
     visStatus(status, "Din adgangskode er gemt.", "ok");
     setTimeout(() => { location.href = $("#vk-spring").getAttribute("href"); }, 1000);
-  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); }
+  } catch (err) {
+    visStatus(status, err.status === 403 ? "Der er gået mere end 30 minutter, siden du trykkede på linket. Du er stadig logget ind – vælg adgangskode under Min profil → Skift adgangskode." : fejlTekst(err), "fejl");
+  }
 });
 
 $("#glemt-form").addEventListener("submit", async (e) => {
@@ -149,7 +151,8 @@ $("#profil-form").addEventListener("submit", async (e) => {
 $("#skift-kode").addEventListener("click", async () => {
   tilstand = "skift";
   // Logget ind via login-link for nylig? Så skal man ikke kende den gamle adgangskode.
-  const fraLink = !!(await api("/mig").catch(() => null))?.bruger?.fra_link;
+  const mig = (await api("/mig").catch(() => null))?.bruger;
+  const fraLink = !!mig && (mig.fra_link || !mig.har_kode); // ingen gammel kode at skrive
   $("#ny-kode-titel").textContent = "Skift adgangskode";
   $("#ny-kode-intro").textContent = "Skriv din nye adgangskode to gange.";
   $("#navn-felt").hidden = true;

@@ -161,7 +161,7 @@ smal.addEventListener("change", kontoFold);
   kontoFold();
   // Administratorer får et tal i menuen, når nogen har bedt om et login-link.
   if (erAdmin(b)) api("/anmodninger").then((alle) => {
-    const n = alle.filter((a) => !a.link_lavet).length;
+    const n = alle.filter((a) => !a.link_lavet || Date.now() - new Date(a.link_lavet) > 7 * 864e5).length;
     if (!n) return;
     const tal = () => h("span", { class: "maerke anm-tal", "aria-label": `${n} venter på login-link` }, String(n));
     $("#admin-link")?.append(" ", tal());

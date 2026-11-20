@@ -231,8 +231,8 @@ rute("PATCH", "/mig", async ({ bruger, body }) => {
 rute("POST", "/mig/kode", async ({ req, bruger, body }) => {
   kraevLogin(bruger);
   const [b] = await sql`select kode_hash from brugere where id = ${bruger.id}`;
-  // Logget ind via login-link for nylig (glemt adgangskode)? Så kræves den gamle kode ikke.
-  if (!bruger.fra_link && !(await tjekKode(String(body.nuvaerende || ""), b.kode_hash))) throw new Fejl(403, "Din nuværende adgangskode er forkert.");
+  // Logget ind via login-link for nylig (glemt adgangskode), eller har man slet ingen kode? Så kræves den gamle kode ikke.
+  if (!bruger.fra_link && b.kode_hash && !(await tjekKode(String(body.nuvaerende || ""), b.kode_hash))) throw new Fejl(403, "Din nuværende adgangskode er forkert.");
   const kode = kodeKrav(String(body.kode || ""));
   await sql`update brugere set kode_hash = ${await hashKode(kode)} where id = ${bruger.id}`;
   await sql`delete from sessioner where bruger_id = ${bruger.id} and token_hash <> ${hash(laesCookie(req))}`; // log andre enheder ud

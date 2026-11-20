@@ -66,11 +66,13 @@ async function hentAnmodninger() {
   let data;
   try { data = await api("/anmodninger"); } catch { return; }
   $("#anmodninger").hidden = !data.length;
-  $("#anm-antal").textContent = data.filter((a) => !a.link_lavet).length || "";
+  // Et link virker i 7 dage. Er det udløbet uden at være brugt, venter medlemmet igen.
+  for (const a of data) a.udloebet = !!a.link_lavet && Date.now() - new Date(a.link_lavet) > 7 * 864e5;
+  $("#anm-antal").textContent = data.filter((a) => !a.link_lavet || a.udloebet).length || "";
   const ul = $("#anm-liste");
   ul.textContent = "";
   for (const a of data) {
-    const send = h("button", { class: a.link_lavet ? "btn alt sm" : "btn", type: "button", "aria-label": `Send login-link til ${a.navn}` }, a.link_lavet ? "Send igen" : "Send login-link");
+    const send = h("button", { class: a.link_lavet && !a.udloebet ? "btn alt sm" : "btn", type: "button", "aria-label": `Send login-link til ${a.navn}` }, a.link_lavet && !a.udloebet ? "Send igen" : "Send login-link");
     send.addEventListener("click", async () => {
       send.disabled = true;
       try { const r = await api(`/anmodninger/${a.id}/link`, { metode: "POST" }); visLink(r.navn, r.email, r.token); hentAnmodninger(); }
@@ -78,7 +80,8 @@ async function hentAnmodninger() {
     });
     ul.append(h("li", { class: "anmodning" },
       h("div", {}, h("b", {}, a.navn), h("span", { class: "muted lille" }, ` · ${a.email} · ${new Date(a.oprettet).toLocaleString("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`),
-        a.link_lavet ? h("div", { class: "anm-sendt lille" }, "✓ Link lavet – ikke brugt endnu") : null),
+        a.udloebet ? h("div", { class: "fejl-tekst lille" }, "Linket er udløbet uden at blive brugt – send et nyt")
+          : a.link_lavet ? h("div", { class: "anm-sendt lille" }, "✓ Link lavet – ikke brugt endnu") : null),
       h("div", { class: "anm-knapper" }, send, sletKnap({ tekst: "Afvis", klasse: "linkknap lille", bekraeft: "Sikker? Tryk igen", label: `Afvis anmodningen fra ${a.navn}`,
         vedSlet: async () => { try { await api(`/anmodninger/${a.id}`, { metode: "DELETE" }); hentAnmodninger(); } catch (e) { visStatus(status, fejlTekst(e), "fejl"); } } }))));
   }

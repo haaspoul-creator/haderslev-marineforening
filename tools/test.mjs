@@ -372,6 +372,16 @@ tjek("andre ubrugte links til samme person lukkes, når ét er brugt", (await kl
 for (let i = 0; i < 5; i++) await klient()("/glemt", "POST", { email: `spam${i}@test.dk` });
 tjek("'glemt adgangskode' kan ikke spammes", (await klient()("/glemt", "POST", { email: "spam9@test.dk" })).status === 429);
 await sql`delete from login_forsoeg`;
+const nyM = (await admin("/medlemmer", "POST", { navn: "Ny Nis", email: "nis@test.dk", rolle: "medlem" })).data.token;
+const nis = klient();
+await nis("/link/log-ind", "POST", { token: nyM });
+await sql`update sessioner set ny_kode_til = now() - interval '1 minute' where bruger_id = (select id from brugere where email = 'nis@test.dk')`;
+tjek("medlem uden adgangskode kan vælge en senere (også efter 30 min.)", ok(await nis("/mig/kode", "POST", { kode: "NisKode1234" })));
+tjek("...og derefter kræves den gamle", (await nis("/mig/kode", "POST", { kode: "NisKode9999" })).status === 403);
+const gl = (await admin("/medlemmer/" + (await nis("/mig")).data.bruger.id + "/link", "POST")).data.token;
+await sql`update links set udloeber = now() - interval '1 minute' where token_hash = encode(sha256(${gl}::bytea), 'hex')`;
+tjek("et udløbet link virker ikke", (await klient()("/link", "POST", { token: gl })).data.gyldig === false && (await klient()("/link/log-ind", "POST", { token: gl })).status === 404);
+await sql`delete from login_forsoeg`;
 tjek("der findes intet nødlink/bagdør", (await anon("/noedlink", "POST", { email: "admin@test.dk" })).status === 404);
 
 // Statiske filer beskyttet

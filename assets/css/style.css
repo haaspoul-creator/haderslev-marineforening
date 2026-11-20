@@ -704,3 +704,4 @@ table.oversigt { width: 100%; border-collapse: collapse; font-size: 15px; }
 .send-knapper .smaa .btn { flex: 1 1 140px; min-height: 46px; font-size: 16px; }
 .advarsel { background: #fff4e0; border-left: 4px solid var(--orange); padding: 10px 14px; border-radius: 8px; font-size: 15px; margin: 12px 0 0; color: var(--moerk); }
 .anm-sendt { color: var(--ok); font-weight: 600; }
+.fejl-tekst { color: var(--fejl); font-weight: 600; }
