@@ -42,7 +42,7 @@ let tilstand = "link"; // "link" | "skift"
       try {
         await api("/link/log-ind", { metode: "POST", data: { token: linkToken } });
         location.replace("/log-ind/?velkommen"); // hel sideindlæsning, så menuen viser, at man er logget ind
-      } catch (e) { visStatus(status, fejlTekst(e), "fejl"); $("#lk-knap").disabled = false; }
+      } catch (e) { visStatus(status, fejlTekst(e), "fejl"); vis("trin-login"); }
     });
     vis("trin-link");
     return;
@@ -76,7 +76,7 @@ $("#vk-form").addEventListener("submit", async (e) => {
     visStatus(status, "Din adgangskode er gemt.", "ok");
     setTimeout(() => { location.href = $("#vk-spring").getAttribute("href"); }, 1000);
   } catch (err) {
-    visStatus(status, err.status === 403 ? "Der er gået mere end 30 minutter, siden du trykkede på linket. Du er stadig logget ind – vælg adgangskode under Min profil → Skift adgangskode." : fejlTekst(err), "fejl");
+    visStatus(status, err.status === 403 ? "Der er gået mere end 30 minutter, siden du trykkede på linket, så adgangskoden blev ikke gemt. Du er stadig logget ind – tryk \"Spring over\". Vil du have en ny adgangskode, så bed bestyrelsen om et nyt login-link." : fejlTekst(err), "fejl");
   }
 });
 
