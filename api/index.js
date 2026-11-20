@@ -19,7 +19,7 @@ const sql = postgres(DB_URL, {
 const SKEMA = readFileSync(new URL("./_skema.sql", import.meta.url), "utf8");
 
 const SESSION_DAGE = 60;
-const LINK_DAGE = 14;
+const LINK_DAGE = 7; // login-links virker i 7 dage og kun én gang
 const COOKIE = "hmf_session";
 
 // ---------- Hjælpere ----------
@@ -81,7 +81,8 @@ async function hentBruger(req) {
   const token = laesCookie(req);
   if (!token) return null;
   const [b] = await sql`
-    select b.id, b.email, b.navn, b.rolle from sessioner s join brugere b on b.id = s.bruger_id
+    select b.id, b.email, b.navn, b.rolle, (s.ny_kode_til > now()) as fra_link, (b.kode_hash is not null) as har_kode
+    from sessioner s join brugere b on b.id = s.bruger_id
     where s.token_hash = ${hash(token)} and s.udloeber > now()`;
   return b || null;
 }
@@ -96,7 +97,7 @@ const kraevAdmin = (b) => { kraevLogin(b); if (b.rolle !== "admin") throw new Fe
 
 async function nytLink(brugerId) {
   const token = nyToken();
-  await sql`delete from links where bruger_id = ${brugerId}`;
+  // Ældre links bliver ved med at virke, til de er brugt eller udløbet – så det gør ikke noget at trykke to gange.
   await sql`insert into links (token_hash, bruger_id, udloeber) values (${hash(token)}, ${brugerId}, now() + ${LINK_DAGE + " days"}::interval)`;
   return token;
 }
@@ -150,12 +151,63 @@ rute("POST", "/log-ud", async ({ req, res }) => {
 });
 
 // Personligt link: se hvem det tilhører, og vælg adgangskode
+// Siden viser "Log ind som …"-knappen først, så mailprogrammer, der åbner links for at tjekke dem, ikke bruger linket op.
 rute("POST", "/link", async ({ body }) => {
   const [l] = await sql`select b.navn, b.email from links l join brugere b on b.id = l.bruger_id
     where l.token_hash = ${hash(String(body.token || ""))} and l.udloeber > now()`;
-  if (!l) throw new Fejl(404, "Linket virker ikke længere. Bed en administrator om et nyt.");
-  return l;
+  // Svarer 200 (ikke 404), så et brugt link ikke giver fejl i browseren – siden viser selv en venlig besked.
+  return l ? { gyldig: true, ...l } : { gyldig: false };
 });
+// Login-link: ét tryk, så er man logget ind. Linket kan kun bruges én gang.
+// I 30 minutter efter må man vælge en ny adgangskode uden at kende den gamle.
+rute("POST", "/link/log-ind", async ({ body, res }) => {
+  const [l] = await sql`delete from links where token_hash = ${hash(String(body.token || ""))} and udloeber > now() returning bruger_id`;
+  if (!l) throw new Fejl(404, "Linket er brugt eller for gammelt. Tryk \"Glemt adgangskode?\" for at få et nyt.");
+  const [b] = await sql`select navn, email, kode_hash is not null har_kode from brugere where id = ${l.bruger_id}`;
+  await sql`delete from links where bruger_id = ${l.bruger_id}`; // andre ubrugte links til samme person lukkes
+  await sql`update login_anmodninger set besvaret = coalesce(besvaret, now()) where bruger_id = ${l.bruger_id}`;
+  const token = nyToken();
+  await sql`insert into sessioner (token_hash, bruger_id, udloeber, ny_kode_til)
+    values (${hash(token)}, ${l.bruger_id}, now() + ${SESSION_DAGE + " days"}::interval, now() + interval '30 minutes')`;
+  saetCookie(res, token, SESSION_DAGE * 86400);
+  return { navn: b.navn, email: b.email, har_kode: b.har_kode };
+});
+
+// "Glemt adgangskode?": svarer altid ens (afslører ikke, hvem der er medlem). Bestyrelsen får en anmodning.
+rute("POST", "/glemt", async ({ req, body }) => {
+  const email = tekst(body.email, 200, "din e-mail", true).toLowerCase();
+  const k = kilde(req, "glemt");
+  const [{ n }] = await sql`select count(*)::int n from login_forsoeg where kilde_hash = ${k} and tid > now() - interval '1 hour'`;
+  if (n >= 5) throw new Fejl(429, "Du har bedt om mange links. Vent lidt, eller kontakt bestyrelsen direkte.");
+  await sql`insert into login_forsoeg (kilde_hash, email) values (${k}, ${"glemt:" + email})`;
+  const [b] = await sql`select id from brugere where email = ${email}`;
+  if (b) {
+    // Spørger man igen (fx fordi linket blev væk), står anmodningen som ventende igen.
+    const [aaben] = await sql`update login_anmodninger set link_lavet = null, oprettet = now()
+      where bruger_id = ${b.id} and besvaret is null returning id`;
+    if (!aaben) await sql`insert into login_anmodninger (bruger_id) values (${b.id})`;
+  }
+  return { ok: true };
+});
+rute("GET", "/anmodninger", async ({ bruger }) => {
+  kraevAdmin(bruger);
+  return sql`select a.id, a.oprettet, a.link_lavet, b.id bruger_id, b.navn, b.email from login_anmodninger a join brugere b on b.id = a.bruger_id
+    where a.besvaret is null order by a.oprettet`;
+});
+rute("POST", "/anmodninger/:id/link", async ({ bruger, p }) => {
+  kraevAdmin(bruger);
+  // Anmodningen bliver stående ("link sendt – ikke brugt endnu"), til medlemmet har brugt linket.
+  const [a] = await sql`update login_anmodninger set link_lavet = now() where id = ${p.id} and besvaret is null returning bruger_id`;
+  if (!a) throw new Fejl(404, "Anmodningen findes ikke længere.");
+  const [b] = await sql`select navn, email from brugere where id = ${a.bruger_id}`;
+  return { token: await nytLink(a.bruger_id), navn: b.navn, email: b.email };
+});
+rute("DELETE", "/anmodninger/:id", async ({ bruger, p }) => {
+  kraevAdmin(bruger);
+  await sql`update login_anmodninger set besvaret = now() where id = ${p.id}`;
+  return { ok: true };
+});
+
 rute("POST", "/aktiver", async ({ body, res }) => {
   const kode = kodeKrav(String(body.kode || ""));
   const [l] = await sql`delete from links where token_hash = ${hash(String(body.token || ""))} and udloeber > now() returning bruger_id`;
@@ -179,10 +231,12 @@ rute("PATCH", "/mig", async ({ bruger, body }) => {
 rute("POST", "/mig/kode", async ({ req, bruger, body }) => {
   kraevLogin(bruger);
   const [b] = await sql`select kode_hash from brugere where id = ${bruger.id}`;
-  if (!(await tjekKode(String(body.nuvaerende || ""), b.kode_hash))) throw new Fejl(403, "Din nuværende adgangskode er forkert.");
+  // Logget ind via login-link for nylig (glemt adgangskode), eller har man slet ingen kode? Så kræves den gamle kode ikke.
+  if (!bruger.fra_link && b.kode_hash && !(await tjekKode(String(body.nuvaerende || ""), b.kode_hash))) throw new Fejl(403, "Din nuværende adgangskode er forkert.");
   const kode = kodeKrav(String(body.kode || ""));
   await sql`update brugere set kode_hash = ${await hashKode(kode)} where id = ${bruger.id}`;
   await sql`delete from sessioner where bruger_id = ${bruger.id} and token_hash <> ${hash(laesCookie(req))}`; // log andre enheder ud
+  await sql`update sessioner set ny_kode_til = null where token_hash = ${hash(laesCookie(req))}`;
   return { ok: true };
 });
 
@@ -613,6 +667,7 @@ const sikrSkema = () => (skemaKlar ||= (async () => {
   });
   // Dataminimering (ved hver opstart): slet gamle data, der ikke længere skal bruges.
   await sql`delete from login_forsoeg where tid < now() - interval '1 day'`;
+  await sql`delete from login_anmodninger where oprettet < now() - interval '30 days'`;
   await sql`delete from sessioner where udloeber < now()`;
   await sql`delete from links where udloeber < now()`;
   await sql`delete from arrangement_tilmeldinger t using arrangementer a where a.id = t.arrangement_id and a.dato < current_date - 90`;

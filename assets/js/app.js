@@ -156,9 +156,17 @@ smal.addEventListener("change", kontoFold);
       h("div", { class: "rolle" }, `Logget ind som ${b.navn} · ${rolle}`),
       h("a", { href: "/log-ind/" }, "Min profil"),
       h("a", { href: "/forslag/" }, "Forslag til hjemmesiden"),
-      erAdmin(b) ? h("a", { href: "/administration/" }, "Administration") : null,
+      erAdmin(b) ? h("a", { href: "/administration/", id: "admin-link" }, "Administration") : null,
       h("button", { type: "button", onclick: logUd }, "Log ud"))));
   kontoFold();
+  // Administratorer får et tal i menuen, når nogen har bedt om et login-link.
+  if (erAdmin(b)) api("/anmodninger").then((alle) => {
+    const n = alle.filter((a) => !a.link_lavet || Date.now() - new Date(a.link_lavet) > 7 * 864e5).length;
+    if (!n) return;
+    const tal = () => h("span", { class: "maerke anm-tal", "aria-label": `${n} venter på login-link` }, String(n));
+    $("#admin-link")?.append(" ", tal());
+    $(".konto > summary")?.append(tal());
+  }).catch(() => {});
 })();
 
 // Formular der både kan oprette og rette (bruges til arrangementer og vagter).

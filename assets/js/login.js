@@ -1,4 +1,4 @@
-// Log ind, vælg adgangskode via personligt link (invitation eller glemt kode), og "Min profil".
+// Log ind, login-link (logger direkte ind), "Glemt adgangskode?" og "Min profil".
 import { api, $, visStatus, fejlTekst, hentBruger, logUd } from "./app.js";
 
 const status = $("#status");
@@ -25,19 +25,78 @@ let tilstand = "link"; // "link" | "skift"
   if (linkToken) {
     // Fjern koden fra adresselinjen, så den ikke gemmes i historikken.
     history.replaceState(null, "", "/log-ind/");
-    try {
-      const l = await api("/link", { metode: "POST", data: { token: linkToken } });
-      $("#ny-kode-titel").textContent = `Velkommen, ${l.navn}!`;
-      $("#ny-kode-intro").textContent = `Vælg en adgangskode til ${l.email}. Du kan også rette dit navn, som de andre medlemmer ser det.`;
-      $("#ny-navn").value = l.navn;
-      $("#navn-felt").hidden = false;
-      vis("trin-ny-kode");
-    } catch (e) { visStatus(status, fejlTekst(e), "fejl"); vis("trin-login"); }
+    let ejer;
+    try { ejer = await api("/link", { metode: "POST", data: { token: linkToken } }); }
+    catch (e) { visStatus(status, fejlTekst(e), "fejl"); vis("trin-login"); return; }
+    if (!ejer.gyldig) {
+      const b = await hentBruger();
+      visStatus(status, "Linket er brugt eller for gammelt." + (b ? ` Du er logget ind som ${b.navn}.` : " Tryk \"Glemt adgangskode?\" herunder for at få et nyt."), "fejl");
+      if (b) visProfil(b); else vis("trin-login");
+      return;
+    }
+    // Vis en knap først: nogle mailprogrammer åbner links for at tjekke dem, og så må linket ikke blive brugt op.
+    $("#lk-titel").textContent = `Hej ${ejer.navn}!`;
+    $("#lk-knap").textContent = `Log ind som ${ejer.navn}`;
+    $("#lk-knap").addEventListener("click", async () => {
+      $("#lk-knap").disabled = true;
+      try {
+        await api("/link/log-ind", { metode: "POST", data: { token: linkToken } });
+        location.replace("/log-ind/?velkommen"); // hel sideindlæsning, så menuen viser, at man er logget ind
+      } catch (e) { visStatus(status, fejlTekst(e), "fejl"); vis("trin-login"); }
+    });
+    vis("trin-link");
     return;
   }
   const b = await hentBruger();
-  if (b) visProfil(b); else vis("trin-login");
+  if (b && params.has("velkommen")) { history.replaceState(null, "", "/log-ind/"); visVelkommen(b); }
+  else if (b) visProfil(b); else vis("trin-login");
 })();
+
+// Efter login via link: man er logget ind. En ny adgangskode er frivillig (men foreslås for nye medlemmer).
+function visVelkommen(l) {
+  $("#vk-titel").textContent = `Velkommen, ${l.navn}!`;
+  if (!l.har_kode) {
+    $("#vk-spoerg").textContent = "Vælg en adgangskode";
+    $("#vk-hjaelp").textContent = "Så kan du logge ind igen uden link. Du kan også springe over og bare bruge et nyt login-link næste gang.";
+    $("#vk-navn-felt").hidden = false;
+    $("#vk-navn").value = l.navn;
+  }
+  $("#vk-spring").href = tilbageTil() === "/" ? "/vagter/" : tilbageTil();
+  vis("trin-velkommen");
+}
+
+$("#vk-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.kode1.value.length < 8) { visStatus(status, "Adgangskoden skal være mindst 8 tegn – eller tryk \"Spring over\".", "fejl"); f.kode1.focus(); return; }
+  if (f.kode1.value !== f.kode2.value) { visStatus(status, "De to adgangskoder er ikke ens.", "fejl"); f.kode2.focus(); return; }
+  try {
+    if (!$("#vk-navn-felt").hidden && f.navn.value.trim()) await api("/mig", { metode: "PATCH", data: { navn: f.navn.value } });
+    await api("/mig/kode", { metode: "POST", data: { kode: f.kode1.value } });
+    visStatus(status, "Din adgangskode er gemt.", "ok");
+    setTimeout(() => { location.href = $("#vk-spring").getAttribute("href"); }, 1000);
+  } catch (err) {
+    visStatus(status, err.status === 403 ? "Der er gået mere end 30 minutter, siden du trykkede på linket, så adgangskoden blev ikke gemt. Du er stadig logget ind – tryk \"Spring over\". Vil du have en ny adgangskode, så bed bestyrelsen om et nyt login-link." : fejlTekst(err), "fejl");
+  }
+});
+
+$("#glemt-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const email = f.email.value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { visStatus(status, "Skriv din e-mail.", "fejl"); f.email.focus(); return; }
+  const knap = f.querySelector("button[type=submit]");
+  knap.disabled = true;
+  try {
+    await api("/glemt", { metode: "POST", data: { email } });
+    f.hidden = true;
+    $("#glemt-tak").hidden = false;
+    visStatus(status, "");
+  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); knap.disabled = false; }
+});
+// Udfyld e-mail i "glemt"-feltet med det, man har skrevet i login-feltet
+$("#login-email").addEventListener("input", (e) => { if (!$("#glemt-email").dataset.rettet) $("#glemt-email").value = e.target.value; });
+$("#glemt-email").addEventListener("input", (e) => { e.target.dataset.rettet = "1"; });
 
 function visProfil(b) {
   $("#profil-navn").value = b.navn;
@@ -54,7 +113,10 @@ $("#login-form").addEventListener("submit", async (e) => {
   try {
     await api("/log-ind", { metode: "POST", data: { email: f.email.value, kode: f.kode.value } });
     location.href = tilbageTil();
-  } catch (err) { visStatus(status, fejlTekst(err), "fejl"); knap.disabled = false; }
+  } catch (err) {
+    visStatus(status, fejlTekst(err) + (err.status === 401 ? " Har du glemt den? Brug \"Glemt adgangskode?\" herunder." : ""), "fejl");
+    knap.disabled = false;
+  }
 });
 
 $("#ny-kode-form").addEventListener("submit", async (e) => {
@@ -64,7 +126,7 @@ $("#ny-kode-form").addEventListener("submit", async (e) => {
   if (f.kode1.value !== f.kode2.value) { visStatus(status, "De to adgangskoder er ikke ens.", "fejl"); return; }
   try {
     if (tilstand === "skift") {
-      if (!f.nuvaerende.value) { visStatus(status, "Skriv din nuværende adgangskode.", "fejl"); f.nuvaerende.focus(); return; }
+      if (!$("#nuv-felt").hidden && !f.nuvaerende.value) { visStatus(status, "Skriv din nuværende adgangskode.", "fejl"); f.nuvaerende.focus(); return; }
       await api("/mig/kode", { metode: "POST", data: { nuvaerende: f.nuvaerende.value, kode: f.kode1.value } });
       visStatus(status, "Din nye adgangskode er gemt.", "ok");
       f.reset();
@@ -86,13 +148,16 @@ $("#profil-form").addEventListener("submit", async (e) => {
   }
   catch (err) { visStatus(status, fejlTekst(err), "fejl"); }
 });
-$("#skift-kode").addEventListener("click", () => {
+$("#skift-kode").addEventListener("click", async () => {
   tilstand = "skift";
+  // Logget ind via login-link for nylig? Så skal man ikke kende den gamle adgangskode.
+  const mig = (await api("/mig").catch(() => null))?.bruger;
+  const fraLink = !!mig && (mig.fra_link || !mig.har_kode); // ingen gammel kode at skrive
   $("#ny-kode-titel").textContent = "Skift adgangskode";
   $("#ny-kode-intro").textContent = "Skriv din nye adgangskode to gange.";
   $("#navn-felt").hidden = true;
-  $("#nuv-felt").hidden = false;
-  $("#k-nuvaerende").required = true;
+  $("#nuv-felt").hidden = fraLink;
+  $("#k-nuvaerende").required = !fraLink;
   vis("trin-ny-kode");
 });
 $("#log-ud").addEventListener("click", logUd);

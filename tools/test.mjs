@@ -333,6 +333,57 @@ const { createHash } = await import("node:crypto");
 tjek("afsender gemmes som HMAC, ikke som simpel hash af IP", kh !== createHash("sha256").update("127.0.0.1|" + new Date().toISOString().slice(0, 10)).digest("hex") && kh !== createHash("sha256").update("::1|" + new Date().toISOString().slice(0, 10)).digest("hex"));
 tjek("ugyldig URL-kodning vælter ikke serveren", (await fetch(B + "/%")).status === 400 && (await fetch(B + "/api/mig")).status === 200);
 
+// Login-link og "Glemt adgangskode?"
+const lm = await medlem("Link Lis", "linklis@test.dk");
+const lmId = (await lm.k("/mig")).data.bruger.id;
+const lnk = (await admin(`/medlemmer/${lmId}/link`, "POST")).data.token;
+const viaLink = klient();
+const ll = await viaLink("/link/log-ind", "POST", { token: lnk });
+tjek("login-link logger direkte ind", ok(ll) && ll.data.navn === "Link Lis" && (await viaLink("/mig")).data.bruger.email === "linklis@test.dk");
+tjek("login-link virker kun én gang", (await klient()("/link/log-ind", "POST", { token: lnk })).status === 404);
+tjek("ugyldigt link afvises", (await klient()("/link/log-ind", "POST", { token: "x".repeat(43) })).status === 404);
+tjek("efter login via link kan man vælge ny kode uden den gamle", ok(await viaLink("/mig/kode", "POST", { kode: "LinkKode123" })));
+tjek("...men kun én gang (bagefter kræves den gamle)", (await viaLink("/mig/kode", "POST", { kode: "AndenKode123" })).status === 403);
+tjek("andre enheder blev logget ud ved den nye kode", (await lm.k("/mig")).data.bruger === null);
+const lm2 = klient();
+tjek("den nye kode virker", ok(await lm2("/log-ind", "POST", { email: "linklis@test.dk", kode: "LinkKode123" })));
+tjek("en almindelig session kan IKKE skifte kode uden den gamle", (await lm2("/mig/kode", "POST", { kode: "Hack12345" })).status === 403);
+await sql`delete from login_forsoeg`;
+const g1 = await klient()("/glemt", "POST", { email: "linklis@test.dk" });
+const g2 = await klient()("/glemt", "POST", { email: "findes.ikke@test.dk" });
+tjek("'glemt adgangskode' svarer ens, uanset om e-mailen findes", ok(g1) && ok(g2) && JSON.stringify(g1.data) === JSON.stringify(g2.data));
+await klient()("/glemt", "POST", { email: "LinkLis@test.dk" });
+const anm = (await admin("/anmodninger")).data;
+tjek("bestyrelsen ser én anmodning (ingen dubletter, ingen for ukendte)", anm.length === 1 && anm[0].email === "linklis@test.dk");
+tjek("medlemmer kan IKKE se anmodninger", (await lm2("/anmodninger")).status === 403);
+tjek("anonyme kan IKKE se anmodninger", (await anon("/anmodninger")).status === 401);
+tjek("medlemmer kan IKKE lave links via anmodninger", (await lm2(`/anmodninger/${anm[0].id}/link`, "POST")).status === 403);
+const svar = await admin(`/anmodninger/${anm[0].id}/link`, "POST");
+tjek("admin laver login-link fra anmodningen med ét tryk", ok(svar) && svar.data.token && svar.data.email === "linklis@test.dk");
+const efter = (await admin("/anmodninger")).data;
+tjek("anmodningen står som 'link sendt', til linket er brugt", efter.length === 1 && efter[0].link_lavet);
+const svar2 = await admin(`/anmodninger/${anm[0].id}/link`, "POST");
+tjek("et nyt link slår IKKE det første ihjel", ok(svar2) && (await klient()("/link", "POST", { token: svar.data.token })).data.gyldig === true);
+tjek("linket kan kigges på uden at blive brugt (til 'Log ind som …'-knappen)", (await klient()("/link", "POST", { token: svar.data.token })).data.navn === "Link Lis");
+tjek("linket fra anmodningen logger ind", ok(await klient()("/link/log-ind", "POST", { token: svar.data.token })));
+tjek("anmodningen forsvinder, når linket er brugt", (await admin("/anmodninger")).data.length === 0);
+tjek("andre ubrugte links til samme person lukkes, når ét er brugt", (await klient()("/link/log-ind", "POST", { token: svar2.data.token })).status === 404
+  && (await klient()("/link", "POST", { token: svar2.data.token })).data.gyldig === false);
+for (let i = 0; i < 5; i++) await klient()("/glemt", "POST", { email: `spam${i}@test.dk` });
+tjek("'glemt adgangskode' kan ikke spammes", (await klient()("/glemt", "POST", { email: "spam9@test.dk" })).status === 429);
+await sql`delete from login_forsoeg`;
+const nyM = (await admin("/medlemmer", "POST", { navn: "Ny Nis", email: "nis@test.dk", rolle: "medlem" })).data.token;
+const nis = klient();
+await nis("/link/log-ind", "POST", { token: nyM });
+await sql`update sessioner set ny_kode_til = now() - interval '1 minute' where bruger_id = (select id from brugere where email = 'nis@test.dk')`;
+tjek("medlem uden adgangskode kan vælge en senere (også efter 30 min.)", ok(await nis("/mig/kode", "POST", { kode: "NisKode1234" })));
+tjek("...og derefter kræves den gamle", (await nis("/mig/kode", "POST", { kode: "NisKode9999" })).status === 403);
+const gl = (await admin("/medlemmer/" + (await nis("/mig")).data.bruger.id + "/link", "POST")).data.token;
+await sql`update links set udloeber = now() - interval '1 minute' where token_hash = encode(sha256(${gl}::bytea), 'hex')`;
+tjek("et udløbet link virker ikke", (await klient()("/link", "POST", { token: gl })).data.gyldig === false && (await klient()("/link/log-ind", "POST", { token: gl })).status === 404);
+await sql`delete from login_forsoeg`;
+tjek("der findes intet nødlink/bagdør", (await anon("/noedlink", "POST", { email: "admin@test.dk" })).status === 404);
+
 // Statiske filer beskyttet
 for (const sti of ["/api/index.js", "/tools/test.mjs", "/api/_skema.sql", "/package.json"]) {
   const r = await fetch(B + sti);

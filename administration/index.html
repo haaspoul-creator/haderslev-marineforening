@@ -43,10 +43,27 @@
   <div id="status" class="note status" hidden></div>
 
   <div id="indhold" hidden>
+    <section class="kort anmodninger" id="anmodninger" hidden aria-labelledby="t-anm">
+      <h2 id="t-anm">Vil have et login-link <span class="maerke" id="anm-antal"></span></h2>
+      <p class="muted">Disse medlemmer har trykket "Glemt adgangskode?". Tryk <b>Send login-link</b>, og vælg mail eller SMS.</p>
+      <ul class="ren" id="anm-liste"></ul>
+    </section>
+
+    <details class="kort video-hjaelp">
+      <summary><b>Se video: Glemt adgangskode – sådan sender du et login-link</b> <span class="muted lille">(2 min., med tale og tekst)</span></summary>
+      <div class="video-ramme" style="margin-top:14px">
+        <video controls preload="none" playsinline poster="/assets/video/glemt-adgangskode-forside.jpg">
+          <source src="/assets/video/glemt-adgangskode.mp4" type="video/mp4">
+          Din browser kan ikke afspille videoen. <a href="/assets/video/glemt-adgangskode.mp4">Hent den her</a>.
+        </video>
+      </div>
+      <p class="muted lille" style="margin-top:10px">Navnene i videoen (Bent, Lis m.fl.) er opdigtede eksempler.</p>
+    </details>
+
     <div class="gitter to">
       <form class="kort" id="inviter">
         <h2>Inviter et medlem</h2>
-        <p class="muted lille">Du får et personligt link, som du sender til medlemmet på mail eller SMS. Med linket vælger medlemmet selv sin adgangskode. Linket virker i 14 dage.</p>
+        <p class="muted lille">Du får et login-link, som du sender til medlemmet på mail eller SMS. Når medlemmet trykker på linket, er det logget ind. Linket virker i 7 dage.</p>
         <label for="i-navn">Navn</label>
         <input id="i-navn" name="navn" required maxlength="80" autocomplete="off">
         <label for="i-email">E-mail</label>
@@ -58,12 +75,6 @@
           <option value="laeser">Skrivebeskyttet – kan kun læse</option>
         </select>
         <div class="form-handling"><button class="btn" type="submit">Opret og lav link</button></div>
-        <div id="link-boks" class="note ok" hidden style="margin-top:16px">
-          <p style="margin-bottom:6px"><b id="link-hvem"></b></p>
-          <label for="link-felt" style="margin-top:0">Personligt link</label>
-          <input id="link-felt" readonly>
-          <div class="form-handling"><button class="btn sm" type="button" id="kopier">Kopier link</button><a class="btn sm alt" id="mail-link" href="#">Send på mail</a></div>
-        </div>
       </form>
 
       <form class="kort" id="ny-nyhed">
@@ -89,7 +100,7 @@
 
     <section class="afsnit" aria-labelledby="t-medlemmer">
       <h2 id="t-medlemmer">Medlemmer <span class="muted lille" id="antal"></span></h2>
-      <p class="muted">Skift rolle i listen; ændringen gemmes med det samme. Har et medlem glemt sin adgangskode, så tryk "Nyt link" og send linket. "Fjern" sletter medlemmets konto.</p>
+      <p class="muted">Skift rolle i listen; ændringen gemmes med det samme. Har et medlem glemt sin adgangskode, så tryk "Login-link" og send det. "Fjern" sletter medlemmets konto.</p>
       <div id="medlemmer"><p class="muted">Henter …</p></div>
     </section>
   </div>
