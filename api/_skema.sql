@@ -166,3 +166,18 @@ update nyheder set pdf_url = null where pdf_url = '/dokumenter/ankerposten-2026-
 
 -- Nyheder/PDF'er kan gøres "kun for medlemmer" (fx Ankerposten med fødselsdage og telefonnumre)
 alter table nyheder add column if not exists kun_medlemmer boolean not null default false;
+
+-- Login-links logger direkte ind. En session, der er startet fra et link, må vælge ny adgangskode
+-- uden at kende den gamle i et kort stykke tid (til "glemt adgangskode").
+alter table sessioner add column if not exists ny_kode_til timestamptz;
+
+-- "Glemt adgangskode?": anmodninger, som bestyrelsen besvarer med et login-link
+create table if not exists login_anmodninger (
+  id        bigint generated always as identity primary key,
+  bruger_id bigint not null references brugere (id) on delete cascade,
+  oprettet  timestamptz not null default now(),
+  besvaret  timestamptz
+);
+create index if not exists login_anmodninger_aaben on login_anmodninger (besvaret, oprettet desc);
+-- Bestyrelsen har lavet et login-link til anmodningen (anmodningen lukkes først, når linket er brugt)
+alter table login_anmodninger add column if not exists link_lavet timestamptz;
