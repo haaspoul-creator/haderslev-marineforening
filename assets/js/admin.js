@@ -68,7 +68,9 @@ async function hentAnmodninger() {
   $("#anmodninger").hidden = !data.length;
   // Et link virker i 7 dage. Er det udløbet uden at være brugt, venter medlemmet igen.
   for (const a of data) a.udloebet = !!a.link_lavet && Date.now() - new Date(a.link_lavet) > 7 * 864e5;
-  $("#anm-antal").textContent = data.filter((a) => !a.link_lavet || a.udloebet).length || "";
+  const venter = data.filter((a) => !a.link_lavet || a.udloebet).length;
+  $("#anm-antal").textContent = venter;
+  $("#anm-antal").hidden = !venter;
   const ul = $("#anm-liste");
   ul.textContent = "";
   for (const a of data) {
