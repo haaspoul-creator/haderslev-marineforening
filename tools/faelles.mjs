@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 const KONTAKT = {
   adresse: ["Det Maritime Hus", "Ved Havnen 18", "6100 Haderslev"],
   kontaktperson: "Formand Harry Madsen",
-  telefon: "40 94 78 75",
+  telefon: "40 94 73 75",
   email: "Harry.madsen@hotmail.com",
   facebook: "", // fx "https://www.facebook.com/..." – tom = vises som pladsholder
 };
