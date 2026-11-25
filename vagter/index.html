@@ -67,6 +67,21 @@
     </form>
   </details>
 
+  <details class="kort admin-boks" id="admin-loerdage" hidden>
+    <summary>Tilføj alle lørdage i et år</summary>
+    <form id="loerdage">
+      <p class="muted lille" style="margin-top:0">Laver én vagt for hver lørdag i året. Lørdage, der allerede har vagten, springes over.</p>
+      <div class="felter-form">
+        <div><label for="l-aar">År</label><select id="l-aar" name="aar"></select></div>
+        <div><label for="l-titel">Vagt</label><input id="l-titel" name="titel" required maxlength="120" value="Lørdagsvagt i Marinestuen"></div>
+        <div><label for="l-tid">Tidspunkt</label><input id="l-tid" name="tid" type="time" value="10:00"></div>
+        <div><label for="l-sted">Sted</label><input id="l-sted" name="sted" maxlength="120" value="Marinestuen, Det Maritime Hus"></div>
+        <div><label for="l-pladser">Antal pladser</label><input id="l-pladser" name="pladser" type="number" min="1" max="50" value="2" required></div>
+      </div>
+      <div class="form-handling"><button class="btn" type="submit">Tilføj alle lørdage</button></div>
+    </form>
+  </details>
+
   <div id="vagter"><p class="muted">Henter vagter …</p></div>
   <section class="print-ark" id="print-vagtliste" aria-hidden="true"></section>
 </main>

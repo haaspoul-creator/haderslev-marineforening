@@ -352,6 +352,21 @@ rute("POST", "/vagter", async ({ bruger, body }) => {
     ${tekst(body.titel, 120, "vagt", true)}, ${dato(body.dato)}, ${tid(body.tid)}, ${tekst(body.sted, 120, "sted")}, ${pladser}) returning id`;
   return v;
 });
+// Tilføj en vagt hver lørdag i et helt år (springer datoer over, hvor vagten allerede findes).
+rute("POST", "/vagter/loerdage", async ({ bruger, body }) => {
+  kraevAdmin(bruger);
+  const aar = Number(body.aar);
+  const iAar = new Date().getFullYear();
+  if (!Number.isInteger(aar) || aar < iAar || aar > iAar + 2) throw new Fejl(400, `Vælg et år mellem ${iAar} og ${iAar + 2}.`);
+  const titel = tekst(body.titel, 120, "vagt", true), sted = tekst(body.sted, 120, "sted"), t = tid(body.tid), pladser = pladsTal(body.pladser);
+  const nye = await sql`insert into vagter (titel, dato, tid, sted, pladser)
+    select ${titel}, d::date, ${t}, ${sted}, ${pladser}
+    from generate_series(make_date(${aar}::int, 1, 1), make_date(${aar}::int, 12, 31), interval '1 day') d
+    where extract(isodow from d) = 6 and d::date >= current_date
+      and not exists (select 1 from vagter v where v.dato = d::date and v.titel = ${titel})
+    returning id`;
+  return { antal: nye.length };
+});
 const pladsTal = (v) => {
   const n = Number(v);
   if (!Number.isInteger(n) || n < 1 || n > 50) throw new Fejl(400, "Antal pladser skal være mellem 1 og 50.");
