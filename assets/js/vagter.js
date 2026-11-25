@@ -161,6 +161,25 @@ $("#u-print").addEventListener("click", () => {
       },
     });
   }
+  if (erAdmin(mig)) {
+    const lf = $("#loerdage");
+    const iAar = new Date().getFullYear();
+    for (const a of [iAar, iAar + 1, iAar + 2]) lf.aar.append(new Option(String(a), String(a)));
+    lf.aar.value = String(new Date().getMonth() >= 9 ? iAar + 1 : iAar); // fra oktober foreslås næste år
+    $("#admin-loerdage").hidden = false;
+    lf.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const knap = lf.querySelector("button[type=submit]");
+      knap.disabled = true;
+      try {
+        const r = await api("/vagter/loerdage", { metode: "POST", data: Object.fromEntries(new FormData(lf)) });
+        visStatus(status, r.antal ? `${r.antal} lørdage i ${lf.aar.value} er tilføjet.` : `Alle lørdage i ${lf.aar.value} havde allerede vagten.`, "ok");
+        $("#admin-loerdage").open = false;
+        hent();
+      } catch (err) { visStatus(status, fejlTekst(err), "fejl"); }
+      knap.disabled = false;
+    });
+  }
   await hent();
   opdaterJaevnligt(hent);
 })();

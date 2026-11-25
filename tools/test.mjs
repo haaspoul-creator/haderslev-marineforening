@@ -384,6 +384,17 @@ tjek("et udløbet link virker ikke", (await klient()("/link", "POST", { token: g
 await sql`delete from login_forsoeg`;
 tjek("der findes intet nødlink/bagdør", (await anon("/noedlink", "POST", { email: "admin@test.dk" })).status === 404);
 
+// Alle lørdage i et år
+const naesteAar = new Date().getFullYear() + 1;
+const lr = await admin("/vagter/loerdage", "POST", { aar: naesteAar, titel: "Lørdagsvagt", tid: "10:00", sted: "Marinestuen", pladser: 2 });
+const forventet = (() => { let n = 0; for (let d = new Date(Date.UTC(naesteAar, 0, 1)); d.getUTCFullYear() === naesteAar; d.setUTCDate(d.getUTCDate() + 1)) if (d.getUTCDay() === 6) n++; return n; })();
+const lDatoer = (await sql`select dato::text d from vagter where titel = 'Lørdagsvagt'`).map((r) => r.d);
+tjek(`alle ${forventet} lørdage i ${naesteAar} tilføjes`, ok(lr) && lr.data.antal === forventet && lDatoer.length === forventet
+  && lDatoer.every((d) => new Date(d + "T12:00:00Z").getUTCDay() === 6));
+tjek("igen: ingen dubletter", (await admin("/vagter/loerdage", "POST", { aar: naesteAar, titel: "Lørdagsvagt", tid: "10:00", sted: "", pladser: 2 })).data.antal === 0);
+tjek("medlemmer kan IKKE tilføje lørdage", (await (await medlem("Lør Lars", "loerlars@test.dk")).k("/vagter/loerdage", "POST", { aar: naesteAar, titel: "X", pladser: 2 })).status === 403);
+tjek("urimeligt år afvises", (await admin("/vagter/loerdage", "POST", { aar: 1999, titel: "X", pladser: 2 })).status === 400);
+
 // Statiske filer beskyttet
 for (const sti of ["/api/index.js", "/tools/test.mjs", "/api/_skema.sql", "/package.json"]) {
   const r = await fetch(B + sti);
